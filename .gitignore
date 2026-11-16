@@ -1,0 +1,17 @@
+# Dépendances Node & Build
+node_modules/
+dist/
+.vite/
+
+# Python & Environnements virtuels
+venv/
+__pycache__/
+*.pyc
+
+# Données locales et secrets
+pgdata/
+.env
+
+# Système
+.DS_Store
+Thumbs.db
