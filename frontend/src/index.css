@@ -66,9 +66,9 @@ html, body, #root {
 .brand-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(0, 230, 118, 0.12);
-  border: 1.5px solid var(--green-neon);
+  border: 1.5px solid rgb(218, 186, 10);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -556,6 +556,77 @@ html, body, #root {
 .footer-sep {
   color: var(--green-neon);
   margin: 0 8px;
+}
+
+.share-actions,
+.share-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.share-action-button,
+.share-option-button,
+.secondary-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(0, 230, 118, 0.35);
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: rgba(0, 230, 118, 0.1);
+  color: #00E676;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.share-option-button {
+  min-width: 90px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.share-options {
+  margin-top: 10px;
+}
+
+.share-file-note {
+  margin-top: 10px;
+  color: var(--text-gray);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.secondary-action-button {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.16);
+  color: var(--text-gray);
+  text-decoration: none;
+}
+
+.decrypt-message-input {
+  min-height: 150px;
+  line-height: 1.5;
+}
+
+.contact-card-output {
+  margin-top: 12px;
+  min-height: 88px;
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+
+.fingerprint-line {
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  margin: 8px 0 12px;
 }
 
 @media (max-width: 600px) {

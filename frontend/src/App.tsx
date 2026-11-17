@@ -1,54 +1,93 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Shield, Lock, Unlock, Users, Archive, Send, Copy,
-  UploadCloud, Share2, UserPlus, ChevronRight,
+  UploadCloud, Share2, UserPlus, ChevronRight, Download,
   ShieldCheck, Zap, ServerOff, LogOut,
-  Building2, MapPin, FileCheck2, Headphones, User
+  User
 } from 'lucide-react';
+import {
+  chiffrerMessage,
+  chiffrerDonnees,
+  creerCarteContact,
+  dechiffrerDonnees,
+  lireCarteContact,
+  type ProfilLocal
+} from './crypto/cryptoService';
+import { chargerOuCreerIdentite } from './crypto/identityStore';
 
 interface Contact {
   id: string;
   name: string;
-  publicKey: string;
+  clePubChiffrement: Uint8Array;
+  clePubSignature: Uint8Array;
+  empreinte: string;
   sasCode: string;
 }
 
-/* =========================================================
-   MOTEUR CRYPTOGRAPHIQUE SOUVERAIN (Sel + Nonce Aléatoires)
-   ========================================================= */
-
-async function deriveKeyWithSalt(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
-  const enc = new TextEncoder();
-  const keyMaterial = await window.crypto.subtle.importKey(
-    'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
-  );
-  return window.crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false, ['encrypt', 'decrypt']
-  );
+interface FichierDechiffre {
+  name: string;
+  mimeType: string;
+  message: string;
+  donnees: Uint8Array;
 }
 
-async function realEncryptMessage(plaintext: string, secretKey: string): Promise<string> {
-  const enc = new TextEncoder();
-  const salt  = window.crypto.getRandomValues(new Uint8Array(16));
-  const nonce = window.crypto.getRandomValues(new Uint8Array(12));
-  const key   = await deriveKeyWithSalt(secretKey, salt);
-  const buf   = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, enc.encode(plaintext));
-  const payload = { v: '1.2', algo: 'AES256GCM-PBKDF2', salt: Array.from(salt), nonce: Array.from(nonce), ct: Array.from(new Uint8Array(buf)), ts: Date.now() };
-  return `-----DEBUT VERROU VLK-----\n${btoa(JSON.stringify(payload))}\n-----FIN VERROU VLK-----`;
+const FILE_MAGIC = new TextEncoder().encode('VERROU-FILE-1\0');
+
+async function emballerFichier(file: File, message: string): Promise<Uint8Array> {
+  const metadata = new TextEncoder().encode(JSON.stringify({
+    name: file.name,
+    mimeType: file.type || 'application/octet-stream',
+    message
+  }));
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const payload = new Uint8Array(FILE_MAGIC.length + 4 + metadata.length + fileBytes.length);
+  payload.set(FILE_MAGIC);
+  new DataView(payload.buffer).setUint32(FILE_MAGIC.length, metadata.length, false);
+  payload.set(metadata, FILE_MAGIC.length + 4);
+  payload.set(fileBytes, FILE_MAGIC.length + 4 + metadata.length);
+  return payload;
 }
 
-async function realDecryptMessage(vlk: string, secretKey: string): Promise<string> {
-  let clean = vlk.trim()
-    .replace('-----DEBUT VERROU VLK-----','')
-    .replace('-----FIN VERROU VLK-----','').trim();
-  const data  = JSON.parse(atob(clean));
-  if (!data.salt || !data.nonce || !data.ct) throw new Error('Format invalide');
-  const key   = await deriveKeyWithSalt(secretKey, new Uint8Array(data.salt));
-  const buf   = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(data.nonce) }, key, new Uint8Array(data.ct));
-  return new TextDecoder().decode(buf);
+function extraireFichier(bytes: Uint8Array): FichierDechiffre | null {
+  if (bytes.length < FILE_MAGIC.length || !FILE_MAGIC.every((byte, index) => bytes[index] === byte)) {
+    return null;
+  }
+  if (bytes.length < FILE_MAGIC.length + 4) {
+    throw new Error('Le contenu du fichier chiffré est incomplet.');
+  }
+
+  const metadataLength = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    .getUint32(FILE_MAGIC.length, false);
+  const fileOffset = FILE_MAGIC.length + 4 + metadataLength;
+  if (fileOffset > bytes.length) {
+    throw new Error('Les métadonnées du fichier chiffré sont invalides.');
+  }
+
+  let metadata: unknown;
+  try {
+    metadata = JSON.parse(new TextDecoder().decode(bytes.subarray(FILE_MAGIC.length + 4, fileOffset)));
+  } catch {
+    throw new Error('Les métadonnées du fichier déchiffré sont invalides.');
+  }
+  if (
+    !metadata ||
+    typeof metadata !== 'object' ||
+    !('name' in metadata) ||
+    !('mimeType' in metadata) ||
+    !('message' in metadata) ||
+    typeof metadata.name !== 'string' ||
+    typeof metadata.mimeType !== 'string' ||
+    typeof metadata.message !== 'string'
+  ) {
+    throw new Error('Les métadonnées du fichier déchiffré sont incomplètes.');
+  }
+
+  return {
+    name: metadata.name,
+    mimeType: metadata.mimeType,
+    message: metadata.message,
+    donnees: bytes.slice(fileOffset)
+  };
 }
 
 /* =========================================================
@@ -59,7 +98,8 @@ export default function App() {
   const [isUnlocked,      setIsUnlocked]      = useState(false);
   const [activeTab,       setActiveTab]        = useState<'chiffrer'|'dechiffrer'|'contacts'|'coffre'>('chiffrer');
   const [sessionUsername, setSessionUsername]  = useState('');
-  const [sessionPassword, setSessionPassword]  = useState('');
+  const [profil, setProfil] = useState<ProfilLocal | null>(null);
+  const [publicCard, setPublicCard] = useState('');
   const [loginUser,       setLoginUser]        = useState('');
   const [loginPass,       setLoginPass]        = useState('');
   const [loginError,      setLoginError]       = useState('');
@@ -71,30 +111,69 @@ export default function App() {
 
   const [message,           setMessage]           = useState('');
   const [selectedRecipient, setSelectedRecipient] = useState('');
-  const [attachedFile,      setAttachedFile]      = useState<{ name: string; size: string }|null>(null);
+  const [selectedSender, setSelectedSender] = useState('');
+  const [attachedFile,      setAttachedFile]      = useState<File|null>(null);
   const [cipherOutput,      setCipherOutput]      = useState('');
+  const [encryptedAttachment, setEncryptedAttachment] = useState<{ name: string; url: string } | null>(null);
+  const [showCipherShare, setShowCipherShare] = useState(false);
   const [encryptCount,      setEncryptCount]      = useState(0);
   const [copied,            setCopied]            = useState(false);
 
   const [clipboardNote,  setClipboardNote]  = useState('');
+  const [decryptInput, setDecryptInput] = useState('');
   const [decryptedText,  setDecryptedText]  = useState<string|null>(null);
+  const [decryptedFile, setDecryptedFile] = useState<{ name: string; url: string } | null>(null);
+  const [showCardShare, setShowCardShare] = useState(false);
+  const [contactError, setContactError] = useState('');
 
-  const copyToClipboard = (txt: string) => {
-    navigator.clipboard.writeText(txt);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  useEffect(() => {
+    return () => {
+      if (decryptedFile) URL.revokeObjectURL(decryptedFile.url);
+    };
+  }, [decryptedFile]);
+
+  useEffect(() => {
+    return () => {
+      if (encryptedAttachment) URL.revokeObjectURL(encryptedAttachment.url);
+    };
+  }, [encryptedAttachment]);
+
+  const copyToClipboard = async (txt: string) => {
+    try {
+      await navigator.clipboard.writeText(txt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert('Impossible de copier dans le presse-papiers.');
+    }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const partagerWhatsApp = (texte: string) => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(texte)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const partagerGmail = (texte: string, sujet: string) => {
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(sujet)}&body=${encodeURIComponent(texte)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginUser.trim() || !loginPass.trim()) {
       setLoginError('Veuillez renseigner votre nom d\'utilisateur et votre phrase secrète.');
       return;
     }
-    setSessionUsername(loginUser.trim());
-    setSessionPassword(loginPass);
-    setIsUnlocked(true);
-    setLoginError('');
+    try {
+      const username = loginUser.trim();
+      const identity = await chargerOuCreerIdentite(username, loginPass);
+      setProfil(identity);
+      setPublicCard(await creerCarteContact(identity));
+      setSessionUsername(username);
+      setIsUnlocked(true);
+      setLoginError('');
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : 'Impossible de déverrouiller votre identité.');
+    }
   };
 
   const handleLogout = () => {
@@ -102,44 +181,109 @@ export default function App() {
     setLoginUser('');
     setLoginPass('');
     setCipherOutput('');
+    setEncryptedAttachment(null);
     setDecryptedText(null);
+    setDecryptedFile(null);
+    setProfil(null);
   };
 
   const handleEncrypt = async () => {
     if (!message.trim() && !attachedFile) return;
+    const recipient = contacts.find(contact => contact.id === selectedRecipient);
+    if (!recipient || !profil) {
+      alert('Sélectionnez un contact disposant d’une carte VERROU valide.');
+      return;
+    }
     try {
-      const content = attachedFile
-        ? JSON.stringify({ type: 'file', name: attachedFile.name, msg: message })
-        : message;
-      const cipher = await realEncryptMessage(content, sessionPassword);
+      const cipher = attachedFile
+        ? await chiffrerDonnees(
+          await emballerFichier(attachedFile, message),
+          recipient.clePubChiffrement,
+          profil.clePriveeSignature
+        )
+        : await chiffrerMessage(message, recipient.clePubChiffrement, profil.clePriveeSignature);
       setCipherOutput(cipher);
+      setEncryptedAttachment(attachedFile ? {
+        name: attachedFile.name,
+        url: URL.createObjectURL(new Blob([cipher], { type: 'text/plain' }))
+      } : null);
       setEncryptCount(c => c + 1);
-    } catch { alert('Erreur cryptographique.'); }
+      setShowCipherShare(false);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erreur cryptographique.');
+    }
   };
 
   const handlePasteClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (!text) { setClipboardNote('Presse-papiers vide.'); return; }
-      if (text.includes('VERROU VLK')) {
-        const plain = await realDecryptMessage(text, sessionPassword);
-        try {
-          const p = JSON.parse(plain);
-          setDecryptedText(p.type === 'file' ? `[Fichier : ${p.name}]\n${p.msg||''}` : plain);
-        } catch { setDecryptedText(plain); }
-        setClipboardNote('Message déchiffré avec succès !');
-      } else {
-        setClipboardNote('Format non reconnu — pas un message Verrou.');
-      }
-    } catch { setClipboardNote('Échec du déchiffrement : clé invalide ou données altérées.'); }
+      setDecryptInput(text);
+      setClipboardNote('Message collé. Cliquez sur « Déchiffrer le message ».');
+    } catch {
+      setClipboardNote('Impossible de lire le presse-papiers. Collez le message dans le champ ci-dessous.');
+    }
   };
 
-  const handleAddContactSubmit = (e: React.FormEvent) => {
+  const handleDecrypt = async () => {
+    const sender = contacts.find(contact => contact.id === selectedSender);
+    if (!sender || !profil) {
+      setClipboardNote('Sélectionnez le contact qui vous a envoyé ce message.');
+      return;
+    }
+    if (!decryptInput.trim()) {
+      setClipboardNote('Collez le message chiffré dans le champ ci-dessus.');
+      return;
+    }
+    try {
+      const plain = await dechiffrerDonnees(
+        decryptInput.trim(),
+        profil.clePubChiffrement,
+        profil.clePriveeChiffrement,
+        sender.clePubSignature
+      );
+      const fichier = extraireFichier(plain);
+      if (fichier) {
+        const fileBuffer = new ArrayBuffer(fichier.donnees.byteLength);
+        new Uint8Array(fileBuffer).set(fichier.donnees);
+        const url = URL.createObjectURL(new Blob([fileBuffer], { type: fichier.mimeType }));
+        setDecryptedFile({ name: fichier.name, url });
+        setDecryptedText(fichier.message || `Fichier déchiffré : ${fichier.name}`);
+      } else {
+        setDecryptedFile(null);
+        setDecryptedText(new TextDecoder().decode(plain));
+      }
+      setClipboardNote('Message authentifié et déchiffré avec succès.');
+    } catch (error) {
+      setDecryptedFile(null);
+      setDecryptedText(null);
+      setClipboardNote(error instanceof Error ? error.message : 'Échec du déchiffrement.');
+    }
+  };
+
+  const handleAddContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactName.trim() || !contactKey.trim()) return;
-    const sas = `${Math.floor(100+Math.random()*900)} - ${Math.floor(100+Math.random()*900)}`;
-    setContacts([...contacts, { id: Date.now().toString(), name: contactName.trim(), publicKey: contactKey.trim(), sasCode: sas }]);
-    setContactName(''); setContactKey(''); setShowAddContact(false);
+    if (!contactKey.trim()) return;
+    try {
+      const carte = await lireCarteContact(contactKey.trim());
+      const contact = {
+        id: `${Date.now()}-${carte.empreinte.slice(0, 8)}`,
+        name: contactName.trim() || carte.prenom,
+        clePubChiffrement: carte.clePubChiffrement,
+        clePubSignature: carte.clePubSignature,
+        empreinte: carte.empreinte,
+        sasCode: carte.sasCode
+      };
+      setContacts(current => [...current.filter(existing => existing.empreinte !== contact.empreinte), contact]);
+      setSelectedRecipient(contact.id);
+      setSelectedSender(contact.id);
+      setContactName('');
+      setContactKey('');
+      setShowAddContact(false);
+      setContactError('');
+    } catch (error) {
+      setContactError(error instanceof Error ? error.message : 'Carte contact invalide.');
+    }
   };
 
   /* ---- ÉCRAN DE CONNEXION ---- */
@@ -203,11 +347,10 @@ export default function App() {
 
       <footer className="pro-footer">
         <div className="footer-simple-content">
-          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Tous droits réservés.</div>
+          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Souveraineté numérique, sécurité locale et clés sous votre contrôle.</div>
           <div className="footer-simple-right">
-            Développé par <strong>&nbsp;SITCOMint</strong>
-            <span className="footer-sep">•</span>Ouagadougou, Burkina Faso
-            <span className="footer-sep">•</span>Prototype v1.2
+            Développé par <strong>&nbsp;Idrissa YAMEOGO</strong>
+            <span className="footer-sep">•</span>Entreprise <strong>SITCOMint</strong>
           </div>
         </div>
       </footer>
@@ -265,12 +408,12 @@ export default function App() {
           <div className="split-layout-grid">
             <div className="hero-info-col">
               <h1>Vos messages,<br/>votre <span>confidentialité</span></h1>
-              <p>Chiffrement probabiliste : chaque envoi génère un Sel et un Nonce uniques, garantissant l'unicité absolue du bloc chiffré.</p>
+              <p>Chiffrement AES-256-GCM, clé de contenu protégée pour votre contact, et signature de votre identité locale.</p>
               <div className="gold-accent-line"></div>
               <div className="feature-pill-list">
-                <div className="feature-pill-item"><ShieldCheck className="w-4 h-4 text-[#00E676]"/>Sel & Nonce aléatoires</div>
-                <div className="feature-pill-item"><Zap         className="w-4 h-4 text-[#00E676]"/>IND-CPA Sécurisé</div>
-                <div className="feature-pill-item"><ServerOff   className="w-4 h-4 text-[#00E676]"/>Zero-knowledge</div>
+                <div className="feature-pill-item"><ShieldCheck className="w-4 h-4 text-[#00E676]"/>Clé publique du contact</div>
+                <div className="feature-pill-item"><Zap         className="w-4 h-4 text-[#00E676]"/>Signature vérifiable</div>
+                <div className="feature-pill-item"><ServerOff   className="w-4 h-4 text-[#00E676]"/>Clés privées locales</div>
               </div>
             </div>
 
@@ -279,7 +422,7 @@ export default function App() {
                 <div className="header-icon-box"><Lock className="w-6 h-6"/></div>
                 <div>
                   <h2 style={{fontSize:'1.3rem',fontWeight:800}}>Chiffrer un message</h2>
-                  <p style={{fontSize:'0.8rem',color:'#94A3B8'}}>Un chiffrement unique à chaque exécution</p>
+                  <p style={{fontSize:'0.8rem',color:'#94A3B8'}}>AES-256-GCM · clé protégée pour le contact</p>
                 </div>
               </div>
 
@@ -295,16 +438,31 @@ export default function App() {
                 <div className="input-label-row">Ajouter un document (optionnel)</div>
                 <label className="file-drop-zone">
                   <UploadCloud className="w-7 h-7 text-[#00E676]"/>
-                  <span style={{fontSize:'0.86rem',fontWeight:700}}>{attachedFile?attachedFile.name:"Glissez ou cliquez pour parcourir"}</span>
+                  <span style={{fontSize:'0.86rem',fontWeight:700}}>{attachedFile?`${attachedFile.name} (${(attachedFile.size/1024).toFixed(0)} Ko)`:"Glissez ou cliquez pour parcourir"}</span>
                   <span style={{fontSize:'0.72rem',color:'#64748B'}}>PDF, DOC, DOCX, JPG, PNG • Max 10 Mo</span>
-                  <input type="file" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)setAttachedFile({name:f.name,size:`${(f.size/1024).toFixed(0)} Ko`});}}/>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    style={{display:'none'}}
+                    onChange={e=>{
+                      const file=e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 10 * 1024 * 1024) {
+                        setAttachedFile(null);
+                        e.currentTarget.value='';
+                        alert('Le fichier dépasse la limite de 10 Mo.');
+                        return;
+                      }
+                      setAttachedFile(file);
+                    }}
+                  />
                 </label>
               </div>
 
               <div className="input-block">
                 <div className="input-label-row">Destinataire</div>
                 <select value={selectedRecipient} onChange={e=>setSelectedRecipient(e.target.value)} className="cyber-select">
-                  <option value="">Sélectionnez un contact ou entrez un numéro WhatsApp</option>
+                  <option value="">Sélectionnez un contact</option>
                   {contacts.map(c=><option key={c.id} value={c.id}>{c.name} (SAS: {c.sasCode})</option>)}
                 </select>
               </div>
@@ -316,12 +474,37 @@ export default function App() {
               {cipherOutput && (
                 <div style={{background:'#000',padding:14,borderRadius:14,border:'1px solid #00E676'}}>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
-                    <span style={{color:'#00E676',fontSize:'0.76rem',fontWeight:800}}>Génération #{encryptCount} · Sel & Nonce uniques</span>
-                    <button onClick={()=>copyToClipboard(cipherOutput)} style={{background:'#00E676',color:'#000',border:'none',padding:'4px 12px',borderRadius:8,fontWeight:800,cursor:'pointer'}}>
-                      {copied?'Copié !':'Copier'}
-                    </button>
+                    <span style={{color:'#00E676',fontSize:'0.76rem',fontWeight:800}}>Génération #{encryptCount} · Signature vérifiable</span>
+                    <div className="share-actions">
+                      <button onClick={()=>copyToClipboard(cipherOutput)} className="share-action-button">
+                        <Copy className="w-4 h-4"/>{copied?'Copié !':'Copier'}
+                      </button>
+                      <button onClick={()=>setShowCipherShare(value=>!value)} className="share-action-button">
+                        <Share2 className="w-4 h-4"/>Partager
+                      </button>
+                    </div>
                   </div>
                   <pre style={{fontSize:'0.7rem',color:'#94A3B8',overflowX:'auto',maxHeight:80}}>{cipherOutput}</pre>
+                  {showCipherShare && (
+                    <>
+                      {encryptedAttachment && <p className="share-file-note">Téléchargez le fichier chiffré et joignez-le dans WhatsApp ou Gmail.</p>}
+                      <div className="share-options">
+                        <button
+                          onClick={()=>partagerWhatsApp(encryptedAttachment ? `Fichier VERROU chiffré : ${encryptedAttachment.name}.vlk` : cipherOutput)}
+                          className="share-option-button"
+                        >WhatsApp</button>
+                        <button
+                          onClick={()=>partagerGmail(encryptedAttachment ? `Fichier VERROU chiffré : ${encryptedAttachment.name}.vlk` : cipherOutput, 'Message chiffré VERROU')}
+                          className="share-option-button"
+                        >Gmail</button>
+                      </div>
+                    </>
+                  )}
+                  {encryptedAttachment && (
+                    <a href={encryptedAttachment.url} download={`${encryptedAttachment.name}.vlk`} className="secondary-action-button">
+                      <Download className="w-4 h-4"/> Télécharger le fichier chiffré
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -333,7 +516,7 @@ export default function App() {
           <div className="split-layout-grid">
             <div className="hero-info-col">
               <h1>Déchiffrement<br/><span>Instantané</span></h1>
-              <p>Le moteur extrait le Sel et le Nonce intégrés dans le paquet pour restituer le message d'origine avec exactitude.</p>
+              <p>La signature de l’expéditeur est vérifiée avant le déchiffrement AES-256-GCM avec votre clé privée locale.</p>
               <div className="gold-accent-line"></div>
             </div>
             <div className="cyber-card" style={{textAlign:'center',alignItems:'center'}}>
@@ -342,16 +525,39 @@ export default function App() {
               </div>
               <div>
                 <h2 style={{fontSize:'1.45rem',fontWeight:900,marginBottom:8}}>Message reçu sur WhatsApp ?</h2>
-                <p style={{fontSize:'0.9rem',color:'#94A3B8',maxWidth:340}}>Copiez le message reçu dans WhatsApp, puis cliquez ci-dessous.</p>
+                <p style={{fontSize:'0.9rem',color:'#94A3B8',maxWidth:380}}>Collez le message chiffré ci-dessous, puis choisissez son expéditeur pour vérifier sa signature.</p>
               </div>
-              <button onClick={handlePasteClipboard} className="btn-primary-neon" style={{maxWidth:420}}>
-                <Copy className="w-5 h-5"/> COLLER DEPUIS LE PRESSE-PAPIERS
+              <div className="input-block" style={{width:'100%',textAlign:'left'}}>
+                <label htmlFor="encrypted-message" className="input-label-row">Message chiffré à déchiffrer</label>
+                <textarea
+                  id="encrypted-message"
+                  rows={6}
+                  value={decryptInput}
+                  onChange={e=>setDecryptInput(e.target.value)}
+                  placeholder="Collez ici le message VERROU reçu…"
+                  className="cyber-textarea mono decrypt-message-input"
+                  aria-label="Message chiffré à déchiffrer"
+                />
+              </div>
+              <div className="input-block" style={{width:'100%',textAlign:'left'}}>
+                <label htmlFor="message-sender" className="input-label-row">Expéditeur</label>
+                <select id="message-sender" value={selectedSender} onChange={e=>setSelectedSender(e.target.value)} className="cyber-select">
+                  <option value="">Sélectionnez le contact expéditeur</option>
+                  {contacts.map(c=><option key={c.id} value={c.id}>{c.name} (SAS: {c.sasCode})</option>)}
+                </select>
+              </div>
+              <button onClick={handleDecrypt} className="btn-primary-neon" style={{maxWidth:420}}>
+                <Unlock className="w-5 h-5"/> CLIQUER POUR DÉCHIFFRER
+              </button>
+              <button onClick={handlePasteClipboard} className="secondary-action-button">
+                <Copy className="w-4 h-4"/> Coller depuis le presse-papiers
               </button>
               {clipboardNote && <p style={{fontSize:'0.84rem',color:'#F59E0B',fontWeight:700}}>{clipboardNote}</p>}
               {decryptedText && (
                 <div style={{width:'100%',background:'#000',padding:18,borderRadius:14,border:'1px solid #00E676',textAlign:'left'}}>
                   <div style={{color:'#00E676',fontSize:'0.78rem',fontWeight:800,marginBottom:6}}>Contenu authentifié :</div>
                   <p style={{color:'#fff',fontSize:'0.9rem',whiteSpace:'pre-wrap'}}>{decryptedText}</p>
+                  {decryptedFile && <a className="secondary-action-button" href={decryptedFile.url} download={decryptedFile.name}>Télécharger le fichier déchiffré</a>}
                 </div>
               )}
             </div>
@@ -368,13 +574,23 @@ export default function App() {
             </div>
             <div className="cyber-card" style={{gap:14}}>
               {/* Ma clé publique */}
-              <div onClick={()=>alert('Votre clé : pk_verrou_ed25519_9f8a2b3c4d5e')}
-                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:16,borderRadius:14,background:'rgba(3,7,18,0.7)',border:'1px solid rgba(255,255,255,0.08)',cursor:'pointer'}}>
+              <div style={{padding:16,borderRadius:14,background:'rgba(3,7,18,0.7)',border:'1px solid rgba(255,255,255,0.08)'}}>
                 <div style={{display:'flex',alignItems:'center',gap:12}}>
                   <div style={{padding:9,borderRadius:11,background:'rgba(0,230,118,0.1)',color:'#00E676'}}><Share2 className="w-5 h-5"/></div>
-                  <div><h3 style={{fontSize:'0.98rem',fontWeight:800}}>Ma clé publique</h3><p style={{fontSize:'0.76rem',color:'#94A3B8'}}>Partager ma clé</p></div>
+                  <div><h3 style={{fontSize:'0.98rem',fontWeight:800}}>Ma clé publique</h3><p style={{fontSize:'0.76rem',color:'#94A3B8'}}>Carte VERROU · SAS {profil?.sasCode}</p></div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-500"/>
+                <textarea readOnly value={publicCard} aria-label="Ma carte contact VERROU" className="cyber-textarea mono contact-card-output" rows={3}/>
+                {profil && <p className="fingerprint-line">Empreinte : {profil.empreinte}</p>}
+                <div className="share-actions">
+                  <button onClick={()=>copyToClipboard(publicCard)} className="share-action-button"><Copy className="w-4 h-4"/>Copier</button>
+                  <button onClick={()=>setShowCardShare(value=>!value)} className="share-action-button"><Share2 className="w-4 h-4"/>Partager</button>
+                </div>
+                {showCardShare && (
+                  <div className="share-options">
+                    <button onClick={()=>partagerWhatsApp(publicCard)} className="share-option-button">WhatsApp</button>
+                    <button onClick={()=>partagerGmail(publicCard, 'Ma carte contact VERROU')} className="share-option-button">Gmail</button>
+                  </div>
+                )}
               </div>
 
               {/* Ajouter contact */}
@@ -389,8 +605,9 @@ export default function App() {
 
               {showAddContact && (
                 <form onSubmit={handleAddContactSubmit} style={{display:'flex',flexDirection:'column',gap:9,background:'#000',padding:14,borderRadius:12}}>
-                  <input type="text" placeholder="Nom du contact" value={contactName} onChange={e=>setContactName(e.target.value)} className="cyber-input"/>
-                  <input type="text" placeholder="Clé publique reçue" value={contactKey} onChange={e=>setContactKey(e.target.value)} className="cyber-input"/>
+                  <input type="text" placeholder="Nom du contact (facultatif)" value={contactName} onChange={e=>setContactName(e.target.value)} className="cyber-input"/>
+                  <textarea rows={4} placeholder="Collez la carte VERROU-CARTE reçue" value={contactKey} onChange={e=>setContactKey(e.target.value)} className="cyber-textarea mono"/>
+                  {contactError && <p role="alert" style={{color:'#F87171',fontSize:'0.82rem'}}>{contactError}</p>}
                   <button type="submit" className="btn-primary-neon" style={{padding:'10px 20px',fontSize:'0.85rem'}}>Enregistrer</button>
                 </form>
               )}
@@ -406,8 +623,8 @@ export default function App() {
                 </div>
                 {contacts.map(c=>(
                   <div key={c.id} style={{display:'flex',justifyContent:'space-between',padding:9,background:'rgba(255,255,255,0.04)',borderRadius:9,marginTop:6,fontSize:'0.84rem'}}>
-                    <span><strong>{c.name}</strong><span style={{color:'#F59E0B',marginLeft:8}}>SAS: {c.sasCode}</span></span>
-                    <button onClick={()=>setContacts(contacts.filter(i=>i.id!==c.id))} style={{color:'#F87171',background:'none',border:'none',cursor:'pointer'}}>✕</button>
+                    <span><strong>{c.name}</strong><span style={{color:'#F59E0B',marginLeft:8}}>SAS: {c.sasCode}</span><br/><small style={{color:'#64748B'}}>Empreinte : {c.empreinte}</small></span>
+                    <button onClick={()=>setContacts(current=>current.filter(i=>i.id!==c.id))} aria-label={`Supprimer ${c.name}`} style={{color:'#F87171',background:'none',border:'none',cursor:'pointer'}}>✕</button>
                   </div>
                 ))}
               </div>
@@ -444,11 +661,10 @@ export default function App() {
       {/* ======= PIED DE PAGE SIMPLE ======= */}
       <footer className="pro-footer">
         <div className="footer-simple-content">
-          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Tous droits réservés.</div>
+          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Souveraineté numérique, sécurité locale et clés sous votre contrôle.</div>
           <div className="footer-simple-right">
-            Développé par <strong>&nbsp;SITCOMint</strong>
-            <span className="footer-sep">•</span>Ouagadougou, Burkina Faso
-            <span className="footer-sep">•</span>Prototype v1.2
+            Développé par <strong>&nbsp;Idrissa YAMEOGO</strong>
+            <span className="footer-sep">•</span>Entreprise <strong>SITCOMint</strong>
           </div>
         </div>
       </footer>
