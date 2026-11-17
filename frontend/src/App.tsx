@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Shield, Lock, Unlock, Users, Archive, Send, Copy,
   UploadCloud, Share2, UserPlus, ChevronRight, Download,
-  ShieldCheck, Zap, ServerOff, LogOut,
-  User
+  ShieldCheck, Zap, ServerOff, LogOut, User, ArrowRight,
+  Eye, X
 } from 'lucide-react';
 import {
   chiffrerMessage,
@@ -32,6 +32,90 @@ interface FichierDechiffre {
 }
 
 const FILE_MAGIC = new TextEncoder().encode('VERROU-FILE-1\0');
+
+interface FichierPrevisualisable {
+  name: string;
+  mimeType: string;
+  url: string;
+}
+
+function getPreviewKind(file: Pick<FichierPrevisualisable, 'name' | 'mimeType'>): 'pdf' | 'image' | null {
+  if (file.mimeType === 'application/pdf' || /\.pdf$/i.test(file.name)) return 'pdf';
+  if (file.mimeType.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name)) return 'image';
+  return null;
+}
+
+function AppFooter({ onNavigateHome }: { onNavigateHome: (anchor: string) => void }) {
+  const navigateToAnchor = (anchor: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    onNavigateHome(anchor);
+  };
+
+  return (
+    <footer className="pro-footer">
+      <div className="footer-main-grid">
+        <section className="footer-brand-column">
+          <div className="footer-brand-lockup">
+            <div className="footer-brand-mark">
+              <Shield className="footer-shield" />
+              <Lock className="footer-lock" />
+            </div>
+            <div>
+              <strong className="footer-brand-name">VERROU</strong>
+              <span className="footer-brand-tagline">Sécurité. Confidentialité. Confiance.</span>
+            </div>
+          </div>
+          <p className="footer-brand-description">Votre partenaire de confiance pour protéger vos messages et vos données.</p>
+        </section>
+
+        <nav className="footer-link-column" aria-label="Navigation du pied de page">
+          <h2>Navigation</h2>
+          <ul>
+            <li><ChevronRight /><a href="#accueil" onClick={navigateToAnchor('accueil')}>Accueil</a></li>
+            <li><ChevronRight /><a href="#fonctionnalites" onClick={navigateToAnchor('fonctionnalites')}>Fonctionnalités</a></li>
+            <li><ChevronRight /><a href="#apropos" onClick={navigateToAnchor('apropos')}>À propos</a></li>
+            <li><ChevronRight /><a href="#faq" onClick={navigateToAnchor('faq')}>FAQ</a></li>
+          </ul>
+        </nav>
+
+        <nav className="footer-link-column" aria-label="Ressources VERROU">
+          <h2>Ressources</h2>
+          <ul>
+            <li><ChevronRight /><a href="#guide" onClick={navigateToAnchor('guide')}>Guide d’utilisation</a></li>
+            <li><ChevronRight /><a href="#souverainete" onClick={navigateToAnchor('souverainete')}>Sécurité &amp; Confidentialité</a></li>
+            <li><ChevronRight /><a href="mailto:yamidrissa@epo.gov.bf?subject=Support%20VERROU">Support</a></li>
+            <li><ChevronRight /><a href="mailto:yamidrissa@epo.gov.bf?subject=Contact%20VERROU">Contact</a></li>
+          </ul>
+        </nav>
+
+        <div className="footer-link-column footer-legal-column">
+          <h2>Légal</h2>
+          <ul>
+            <li><ChevronRight /><span>Conditions d’utilisation</span></li>
+            <li><ChevronRight /><span>Politique de confidentialité</span></li>
+            <li><ChevronRight /><span>Mentions légales</span></li>
+          </ul>
+        </div>
+
+        <section className="footer-contact-column">
+          <h2><Send className="w-5 h-5" /> Contact</h2>
+          <p>Une question sur VERROU ? Écrivez-nous, nous vous répondrons.</p>
+          <a className="footer-contact-button" href="mailto:yamidrissa@epo.gov.bf?subject=Contact%20VERROU">
+            <span>Nous contacter</span>
+            <Send className="w-4 h-4" />
+          </a>
+          <a className="footer-contact-email" href="mailto:yamidrissa@epo.gov.bf">yamidrissa@epo.gov.bf</a>
+        </section>
+      </div>
+
+      <div className="footer-bottom-row">
+        <p>© 2026 <strong>VERROU</strong>. Tous droits réservés.</p>
+        <p className="footer-mission"><ShieldCheck /> Ensemble pour un numérique plus sécurisé</p>
+        <p className="footer-credits">Développé par <strong>Idrissa YAMEOGO</strong><span>•</span><strong>SITCOMint</strong></p>
+      </div>
+    </footer>
+  );
+}
 
 async function emballerFichier(file: File, message: string): Promise<Uint8Array> {
   const metadata = new TextEncoder().encode(JSON.stringify({
@@ -90,12 +174,136 @@ function extraireFichier(bytes: Uint8Array): FichierDechiffre | null {
   };
 }
 
+function HomePage({
+  onOpenLogin,
+  onNavigateHome
+}: {
+  onOpenLogin: () => void;
+  onNavigateHome: (anchor: string) => void;
+}) {
+  return (
+    <div className="verrou-app landing-page">
+      <header className="pro-navbar landing-navbar">
+        <div className="brand-section">
+          <div className="brand-icon"><Shield className="w-6 h-6 text-[#00E676]" /></div>
+          <div className="brand-label">
+            <span className="brand-text">VERROU</span>
+            <span className="brand-tagline">Zero · Knowledge</span>
+          </div>
+        </div>
+        <a className="landing-nav-link" href="#souverainete">Découvrir</a>
+        <button type="button" onClick={onOpenLogin} className="landing-nav-cta">
+          Accéder à mon espace <ArrowRight className="w-4 h-4" />
+        </button>
+      </header>
+
+      <main className="landing-main">
+        <section id="accueil" className="landing-hero">
+          <div className="landing-hero-copy">
+            <span className="landing-eyebrow"><span className="online-pulse" /> Confidentialité maîtrisée</span>
+            <h1>Vos données.<br />Vos clés.<br /><span>Votre souveraineté.</span></h1>
+            <p>
+              VERROU chiffre vos messages et documents avant leur partage.
+              Gardez le contrôle de vos clés privées et choisissez avec qui vous échangez.
+            </p>
+            <div className="landing-hero-actions">
+              <button type="button" onClick={onOpenLogin} className="btn-primary-neon">
+                <Lock className="w-5 h-5" /> Accéder à mon espace sécurisé
+              </button>
+              <a href="#souverainete" className="landing-secondary-link">
+                Découvrir la solution <ChevronRight className="w-4 h-4" />
+              </a>
+            </div>
+            <div className="landing-trust-list">
+              <span><ShieldCheck className="w-4 h-4" /> AES-256-GCM</span>
+              <span><ServerOff className="w-4 h-4" /> Clés privées locales</span>
+              <span><Zap className="w-4 h-4" /> Signature vérifiable</span>
+            </div>
+          </div>
+
+          <div className="landing-visual-card" role="img" aria-label="Illustration du chiffrement VERROU">
+            <div className="landing-visual-orbit landing-visual-orbit-outer" />
+            <div className="landing-visual-orbit landing-visual-orbit-inner" />
+            <div className="landing-visual-lock"><Lock className="w-10 h-10" /></div>
+            <div className="landing-visual-caption">
+              <Lock className="w-4 h-4" />
+              <div><strong>Chiffrement côté navigateur</strong><small>Avant chaque partage</small></div>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+          </div>
+        </section>
+
+        <section id="fonctionnalites" className="landing-section">
+          <div id="souverainete" className="landing-section-heading">
+            <span className="landing-eyebrow">Une approche concrète</span>
+            <h2>La souveraineté numérique,<br /><span>à portée de main.</span></h2>
+            <p>
+              Au Burkina Faso comme ailleurs, la confiance numérique passe par la capacité
+              à protéger ses échanges et à garder la maîtrise de ses accès.
+            </p>
+          </div>
+          <div className="landing-feature-grid">
+            <article className="landing-feature-card">
+              <div className="landing-feature-icon"><Lock className="w-5 h-5" /></div>
+              <h3>Protéger avant d’envoyer</h3>
+              <p>Les messages et fichiers sont chiffrés dans le navigateur avant d’être partagés.</p>
+            </article>
+            <article className="landing-feature-card">
+              <div className="landing-feature-icon"><ShieldCheck className="w-5 h-5" /></div>
+              <h3>Garder la maîtrise des clés</h3>
+              <p>Votre identité cryptographique reste sur votre appareil, protégée par votre phrase secrète.</p>
+            </article>
+            <article className="landing-feature-card">
+              <div className="landing-feature-icon"><Users className="w-5 h-5" /></div>
+              <h3>Choisir ses interlocuteurs</h3>
+              <p>Partagez les clés publiques et vérifiez l’identité de vos contacts avant l’échange.</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="apropos" className="landing-how">
+          <div>
+            <span className="landing-eyebrow">Simple et direct</span>
+            <h2>Reprenez le contrôle<br />de vos échanges.</h2>
+          </div>
+          <ol id="guide" className="landing-steps">
+            <li><span>01</span><div><strong>Déverrouillez votre espace</strong><p>Votre identité est protégée sur votre appareil.</p></div></li>
+            <li><span>02</span><div><strong>Ajoutez un contact vérifié</strong><p>Échangez vos cartes publiques et confirmez les empreintes.</p></div></li>
+            <li><span>03</span><div><strong>Chiffrez, puis partagez</strong><p>Envoyez le contenu chiffré par le canal de votre choix.</p></div></li>
+          </ol>
+        </section>
+
+        <section id="faq" className="landing-faq">
+          <span className="landing-eyebrow">Questions fréquentes</span>
+          <h2>À propos de VERROU</h2>
+          <details>
+            <summary>À quoi sert une clé publique ?</summary>
+            <p>Elle permet à vos contacts de vous envoyer un contenu chiffré sans partager votre clé privée.</p>
+          </details>
+          <details>
+            <summary>Où sont conservées mes clés privées ?</summary>
+            <p>Votre identité cryptographique reste sur votre appareil et est protégée par votre phrase secrète.</p>
+          </details>
+          <details>
+            <summary>Pourquoi parler de souveraineté numérique ?</summary>
+            <p>Parce que protéger ses échanges et garder la maîtrise de ses accès renforce l’autonomie numérique.</p>
+          </details>
+        </section>
+      </main>
+
+      <AppFooter onNavigateHome={onNavigateHome} />
+    </div>
+  );
+}
+
 /* =========================================================
    COMPOSANT PRINCIPAL
    ========================================================= */
 
 export default function App() {
   const [isUnlocked,      setIsUnlocked]      = useState(false);
+  const [showHome, setShowHome] = useState(true);
+  const pendingHomeAnchor = useRef<string | null>(null);
   const [activeTab,       setActiveTab]        = useState<'chiffrer'|'dechiffrer'|'contacts'|'coffre'>('chiffrer');
   const [sessionUsername, setSessionUsername]  = useState('');
   const [profil, setProfil] = useState<ProfilLocal | null>(null);
@@ -122,15 +330,32 @@ export default function App() {
   const [clipboardNote,  setClipboardNote]  = useState('');
   const [decryptInput, setDecryptInput] = useState('');
   const [decryptedText,  setDecryptedText]  = useState<string|null>(null);
-  const [decryptedFile, setDecryptedFile] = useState<{ name: string; url: string } | null>(null);
+  const [decryptedFile, setDecryptedFile] = useState<FichierPrevisualisable | null>(null);
+  const [showDecryptedPreview, setShowDecryptedPreview] = useState(false);
   const [showCardShare, setShowCardShare] = useState(false);
   const [contactError, setContactError] = useState('');
+  const previewKind = decryptedFile ? getPreviewKind(decryptedFile) : null;
+
+  useEffect(() => {
+    if (!showHome || !pendingHomeAnchor.current) return;
+    document.getElementById(pendingHomeAnchor.current)?.scrollIntoView({ behavior: 'auto' });
+    pendingHomeAnchor.current = null;
+  }, [showHome]);
 
   useEffect(() => {
     return () => {
       if (decryptedFile) URL.revokeObjectURL(decryptedFile.url);
     };
   }, [decryptedFile]);
+
+  useEffect(() => {
+    if (!showDecryptedPreview) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowDecryptedPreview(false);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [showDecryptedPreview]);
 
   useEffect(() => {
     return () => {
@@ -170,6 +395,7 @@ export default function App() {
       setPublicCard(await creerCarteContact(identity));
       setSessionUsername(username);
       setIsUnlocked(true);
+      setShowHome(false);
       setLoginError('');
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : 'Impossible de déverrouiller votre identité.');
@@ -184,7 +410,22 @@ export default function App() {
     setEncryptedAttachment(null);
     setDecryptedText(null);
     setDecryptedFile(null);
+    setShowDecryptedPreview(false);
     setProfil(null);
+    setShowHome(true);
+  };
+
+  const navigateHome = (anchor: string) => {
+    if (showHome) {
+      document.getElementById(anchor)?.scrollIntoView({ behavior: 'auto' });
+      return;
+    }
+    pendingHomeAnchor.current = anchor;
+    setShowHome(true);
+  };
+
+  const openSecureSpace = () => {
+    setShowHome(false);
   };
 
   const handleEncrypt = async () => {
@@ -259,6 +500,7 @@ export default function App() {
       setClipboardNote('Sélectionnez le contact qui vous a envoyé ce message.');
       return;
     }
+    setShowDecryptedPreview(false);
     try {
       const plain = await dechiffrerDonnees(
         message,
@@ -271,7 +513,7 @@ export default function App() {
         const fileBuffer = new ArrayBuffer(fichier.donnees.byteLength);
         new Uint8Array(fileBuffer).set(fichier.donnees);
         const url = URL.createObjectURL(new Blob([fileBuffer], { type: fichier.mimeType }));
-        setDecryptedFile({ name: fichier.name, url });
+        setDecryptedFile({ name: fichier.name, mimeType: fichier.mimeType, url });
         setDecryptedText(fichier.message || `Fichier déchiffré : ${fichier.name}`);
       } else {
         setDecryptedFile(null);
@@ -311,6 +553,10 @@ export default function App() {
   };
 
   /* ---- ÉCRAN DE CONNEXION ---- */
+  if (showHome) {
+    return <HomePage onOpenLogin={openSecureSpace} onNavigateHome={navigateHome} />;
+  }
+
   if (!isUnlocked) return (
     <div className="verrou-app">
       <header className="pro-navbar">
@@ -325,9 +571,12 @@ export default function App() {
           <span style={{width:8,height:8,borderRadius:'50%',background:'#64748B',display:'inline-block'}}></span>
           <span>Non connecté</span>
         </div>
+        <button type="button" onClick={() => setShowHome(true)} className="login-home-link">
+          Retour à l’accueil
+        </button>
       </header>
 
-      <main className="main-viewport" style={{justifyContent:'center'}}>
+      <main className="main-viewport login-viewport" style={{justifyContent:'center'}}>
         <div className="cyber-card" style={{maxWidth:480,margin:'0 auto',textAlign:'center',alignItems:'center',padding:'40px 32px'}}>
           <div className="header-icon-box" style={{width:72,height:72,borderRadius:20}}>
             <Lock className="w-8 h-8" />
@@ -369,15 +618,7 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="pro-footer">
-        <div className="footer-simple-content">
-          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Souveraineté numérique, sécurité locale et clés sous votre contrôle.</div>
-          <div className="footer-simple-right">
-            Développé par <strong>&nbsp;Idrissa YAMEOGO</strong>
-            <span className="footer-sep">•</span>Entreprise <strong>SITCOMint</strong>
-          </div>
-        </div>
-      </footer>
+      <AppFooter onNavigateHome={navigateHome} />
     </div>
   );
 
@@ -398,12 +639,21 @@ export default function App() {
         </div>
 
         {/* CENTRE : Onglets */}
-        <nav className="nav-pill-group">
+        <nav className="nav-pill-group" aria-label="Navigation principale">
           {(['chiffrer','dechiffrer','contacts','coffre'] as const).map(tab => {
             const icons = { chiffrer: <Lock className="w-4 h-4"/>, dechiffrer: <Send className="w-4 h-4"/>, contacts: <Users className="w-4 h-4"/>, coffre: <Archive className="w-4 h-4"/> };
-            const labels = { chiffrer:'Chiffrer', dechiffrer:'Déchiffrer', contacts:`Contacts (${contacts.length})`, coffre:'Coffre (0)' };
+            const labels = { chiffrer:'Chiffrer', dechiffrer:'Déchiffrer', contacts:'Contacts', coffre:'Coffre' };
             return (
-              <button key={tab} onClick={() => setActiveTab(tab)} className={`nav-tab-btn ${activeTab===tab?'active':''}`}>
+              <button
+                key={tab}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`nav-tab-btn ${activeTab===tab?'active':''}`}
+                aria-current={activeTab === tab ? 'page' : undefined}
+              >
                 {icons[tab]} <span>{labels[tab]}</span>
               </button>
             );
@@ -425,7 +675,7 @@ export default function App() {
       </header>
 
       {/* ======= CONTENU PRINCIPAL ======= */}
-      <main className="main-viewport">
+      <main className="main-viewport workspace-viewport">
 
         {/* PAGE CHIFFRER */}
         {activeTab === 'chiffrer' && (
@@ -544,11 +794,11 @@ export default function App() {
               <div className="gold-accent-line"></div>
             </div>
             <div className="cyber-card" style={{textAlign:'center',alignItems:'center'}}>
-              <div className="header-icon-box" style={{width:84,height:84,borderRadius:24}}>
+              <div className="header-icon-box decrypt-header-icon">
                 <Unlock className="w-10 h-10"/>
               </div>
               <div>
-                <h2 style={{fontSize:'1.45rem',fontWeight:900,marginBottom:8}}>Message reçu sur WhatsApp ?</h2>
+                <h2 className="decrypt-card-title">Message reçu sur WhatsApp ?</h2>
                 <p style={{fontSize:'0.9rem',color:'#94A3B8',maxWidth:380}}>Importez le fichier .vlk reçu ou collez le contenu chiffré complet, puis choisissez son expéditeur.</p>
               </div>
               <label className="file-drop-zone" style={{width:'100%',padding:12}}>
@@ -560,7 +810,7 @@ export default function App() {
                 <label htmlFor="encrypted-message" className="input-label-row">Message chiffré à déchiffrer</label>
                 <textarea
                   id="encrypted-message"
-                  rows={6}
+                  rows={4}
                   value={decryptInput}
                   onChange={e=>setDecryptInput(e.target.value)}
                   placeholder="Collez ici le message VERROU reçu…"
@@ -586,7 +836,18 @@ export default function App() {
                 <div style={{width:'100%',background:'#000',padding:18,borderRadius:14,border:'1px solid #00E676',textAlign:'left'}}>
                   <div style={{color:'#00E676',fontSize:'0.78rem',fontWeight:800,marginBottom:6}}>Contenu authentifié :</div>
                   <p style={{color:'#fff',fontSize:'0.9rem',whiteSpace:'pre-wrap'}}>{decryptedText}</p>
-                  {decryptedFile && <a className="secondary-action-button" href={decryptedFile.url} download={decryptedFile.name}>Télécharger le fichier déchiffré</a>}
+                  {decryptedFile && (
+                    <div className="decrypted-file-actions">
+                      {previewKind && (
+                        <button type="button" className="secondary-action-button" onClick={() => setShowDecryptedPreview(true)}>
+                          <Eye className="w-4 h-4" /> Voir le contenu
+                        </button>
+                      )}
+                      <a className="secondary-action-button" href={decryptedFile.url} download={decryptedFile.name}>
+                        <Download className="w-4 h-4" /> Télécharger le fichier
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -669,11 +930,11 @@ export default function App() {
               <p>Stockez et archivez vos messages et documents chiffrés en toute sécurité sur votre terminal.</p>
               <div className="gold-accent-line"></div>
             </div>
-            <div className="cyber-card" style={{minHeight:300,justifyContent:'center'}}>
+            <div className="cyber-card" style={{minHeight:240,justifyContent:'center'}}>
               <div style={{display:'flex',alignItems:'center',gap:12}}>
                 <div style={{padding:9,borderRadius:11,background:'rgba(0,230,118,0.1)',color:'#00E676'}}><Archive className="w-5 h-5"/></div>
                 <div>
-                  <h2 style={{fontSize:'1.2rem',fontWeight:800}}>Mes copies chiffrées (0)</h2>
+                  <h2 style={{fontSize:'1.2rem',fontWeight:800}}>Mes copies chiffrées</h2>
                   <p style={{fontSize:'0.78rem',color:'#94A3B8'}}>Stockées uniquement dans la mémoire chiffrée de votre appareil.</p>
                 </div>
               </div>
@@ -688,15 +949,39 @@ export default function App() {
       </main>
 
       {/* ======= PIED DE PAGE SIMPLE ======= */}
-      <footer className="pro-footer">
-        <div className="footer-simple-content">
-          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Souveraineté numérique, sécurité locale et clés sous votre contrôle.</div>
-          <div className="footer-simple-right">
-            Développé par <strong>&nbsp;Idrissa YAMEOGO</strong>
-            <span className="footer-sep">•</span>Entreprise <strong>SITCOMint</strong>
-          </div>
+      <AppFooter onNavigateHome={navigateHome} />
+      {showDecryptedPreview && decryptedFile && previewKind && (
+        <div className="file-preview-backdrop" onClick={() => setShowDecryptedPreview(false)}>
+          <section
+            className="file-preview-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="file-preview-title"
+            onClick={event => event.stopPropagation()}
+          >
+            <header className="file-preview-header">
+              <div>
+                <h2 id="file-preview-title">Aperçu du fichier</h2>
+                <p>{decryptedFile.name}</p>
+              </div>
+              <button type="button" className="file-preview-close" aria-label="Fermer l’aperçu" onClick={() => setShowDecryptedPreview(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </header>
+            <div className={`file-preview-content ${previewKind === 'image' ? 'image-preview' : 'pdf-preview'}`}>
+              {previewKind === 'image'
+                ? <img src={decryptedFile.url} alt={decryptedFile.name} />
+                : <iframe src={decryptedFile.url} title={`Aperçu de ${decryptedFile.name}`} />}
+            </div>
+            <div className="file-preview-actions">
+              <a className="secondary-action-button" href={decryptedFile.url} download={decryptedFile.name}>
+                <Download className="w-4 h-4" /> Télécharger le fichier
+              </a>
+              <button type="button" className="secondary-action-button" onClick={() => setShowDecryptedPreview(false)}>Fermer</button>
+            </div>
+          </section>
         </div>
-      </footer>
+      )}
     </div>
   );
 }
