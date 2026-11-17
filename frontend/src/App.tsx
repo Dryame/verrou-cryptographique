@@ -225,19 +225,43 @@ export default function App() {
     }
   };
 
+  const handleEncryptedFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const text = (await file.text()).trim();
+      if (!text.startsWith('VLK2:')) {
+        setClipboardNote('Ce fichier ne contient pas le chiffrement VERROU attendu. Sélectionnez le fichier .vlk reçu, pas le message d’annonce.');
+        return;
+      }
+      setDecryptInput(text);
+      setClipboardNote('Fichier .vlk chargé. Choisissez l’expéditeur puis cliquez sur « Déchiffrer ».');
+    } catch {
+      setClipboardNote('Impossible de lire le fichier chiffré.');
+    } finally {
+      input.value = '';
+    }
+  };
+
   const handleDecrypt = async () => {
+    const message = decryptInput.trim();
+    if (!message) {
+      setClipboardNote('Importez le fichier .vlk reçu ou collez le contenu chiffré.');
+      return;
+    }
+    if (!message.startsWith('VLK2:')) {
+      setClipboardNote('Le contenu collé est probablement le message d’annonce, pas le chiffrement. Importez le fichier .vlk reçu ou collez son contenu complet commençant par « VLK2: ».');
+      return;
+    }
     const sender = contacts.find(contact => contact.id === selectedSender);
     if (!sender || !profil) {
       setClipboardNote('Sélectionnez le contact qui vous a envoyé ce message.');
       return;
     }
-    if (!decryptInput.trim()) {
-      setClipboardNote('Collez le message chiffré dans le champ ci-dessus.');
-      return;
-    }
     try {
       const plain = await dechiffrerDonnees(
-        decryptInput.trim(),
+        message,
         profil.clePubChiffrement,
         profil.clePriveeChiffrement,
         sender.clePubSignature
@@ -490,11 +514,11 @@ export default function App() {
                       {encryptedAttachment && <p className="share-file-note">Téléchargez le fichier chiffré et joignez-le dans WhatsApp ou Gmail.</p>}
                       <div className="share-options">
                         <button
-                          onClick={()=>partagerWhatsApp(encryptedAttachment ? `Fichier VERROU chiffré : ${encryptedAttachment.name}.vlk` : cipherOutput)}
+                          onClick={()=>partagerWhatsApp(encryptedAttachment ? `Pièce jointe requise : ${encryptedAttachment.name}.vlk. Dans VERROU, importez ce fichier dans l’onglet Déchiffrer.` : cipherOutput)}
                           className="share-option-button"
                         >WhatsApp</button>
                         <button
-                          onClick={()=>partagerGmail(encryptedAttachment ? `Fichier VERROU chiffré : ${encryptedAttachment.name}.vlk` : cipherOutput, 'Message chiffré VERROU')}
+                          onClick={()=>partagerGmail(encryptedAttachment ? `Pièce jointe requise : ${encryptedAttachment.name}.vlk. Dans VERROU, importez ce fichier dans l’onglet Déchiffrer.` : cipherOutput, 'Message chiffré VERROU')}
                           className="share-option-button"
                         >Gmail</button>
                       </div>
@@ -525,8 +549,13 @@ export default function App() {
               </div>
               <div>
                 <h2 style={{fontSize:'1.45rem',fontWeight:900,marginBottom:8}}>Message reçu sur WhatsApp ?</h2>
-                <p style={{fontSize:'0.9rem',color:'#94A3B8',maxWidth:380}}>Collez le message chiffré ci-dessous, puis choisissez son expéditeur pour vérifier sa signature.</p>
+                <p style={{fontSize:'0.9rem',color:'#94A3B8',maxWidth:380}}>Importez le fichier .vlk reçu ou collez le contenu chiffré complet, puis choisissez son expéditeur.</p>
               </div>
+              <label className="file-drop-zone" style={{width:'100%',padding:12}}>
+                <UploadCloud className="w-5 h-5 text-[#00E676]"/>
+                <span style={{fontSize:'0.84rem',fontWeight:700}}>Importer un fichier chiffré (.vlk)</span>
+                <input type="file" accept=".vlk,.txt,text/plain" style={{display:'none'}} onChange={handleEncryptedFileChange}/>
+              </label>
               <div className="input-block" style={{width:'100%',textAlign:'left'}}>
                 <label htmlFor="encrypted-message" className="input-label-row">Message chiffré à déchiffrer</label>
                 <textarea
