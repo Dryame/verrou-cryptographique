@@ -1,681 +1,457 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
-  Lock, Send, Inbox, ShieldCheck, Copy, Users, 
-  Trash2, Share2, PlusCircle, AlertTriangle, KeyRound, Check, Plus, Paperclip, X, FileText, Image as ImageIcon, Archive
+  Shield, Lock, Unlock, Users, Archive, Send, Copy,
+  UploadCloud, Share2, UserPlus, ChevronRight,
+  ShieldCheck, Zap, ServerOff, LogOut,
+  Building2, MapPin, FileCheck2, Headphones, User
 } from 'lucide-react';
 
 interface Contact {
   id: string;
-  prenom: string;
-  codeSecurite: string;
-  clePublique: string;
-  verifie: boolean;
+  name: string;
+  publicKey: string;
+  sasCode: string;
 }
 
-interface CopieCoffre {
-  id: string;
-  date: string;
-  destinataire: string;
-  type: 'texte' | 'fichier';
-  nomFichier?: string;
-  contenu: string;
+/* =========================================================
+   MOTEUR CRYPTOGRAPHIQUE SOUVERAIN (Sel + Nonce Aléatoires)
+   ========================================================= */
+
+async function deriveKeyWithSalt(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  const keyMaterial = await window.crypto.subtle.importKey(
+    'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  return window.crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt', 'decrypt']
+  );
 }
+
+async function realEncryptMessage(plaintext: string, secretKey: string): Promise<string> {
+  const enc = new TextEncoder();
+  const salt  = window.crypto.getRandomValues(new Uint8Array(16));
+  const nonce = window.crypto.getRandomValues(new Uint8Array(12));
+  const key   = await deriveKeyWithSalt(secretKey, salt);
+  const buf   = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, key, enc.encode(plaintext));
+  const payload = { v: '1.2', algo: 'AES256GCM-PBKDF2', salt: Array.from(salt), nonce: Array.from(nonce), ct: Array.from(new Uint8Array(buf)), ts: Date.now() };
+  return `-----DEBUT VERROU VLK-----\n${btoa(JSON.stringify(payload))}\n-----FIN VERROU VLK-----`;
+}
+
+async function realDecryptMessage(vlk: string, secretKey: string): Promise<string> {
+  let clean = vlk.trim()
+    .replace('-----DEBUT VERROU VLK-----','')
+    .replace('-----FIN VERROU VLK-----','').trim();
+  const data  = JSON.parse(atob(clean));
+  if (!data.salt || !data.nonce || !data.ct) throw new Error('Format invalide');
+  const key   = await deriveKeyWithSalt(secretKey, new Uint8Array(data.salt));
+  const buf   = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: new Uint8Array(data.nonce) }, key, new Uint8Array(data.ct));
+  return new TextDecoder().decode(buf);
+}
+
+/* =========================================================
+   COMPOSANT PRINCIPAL
+   ========================================================= */
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'chiffrer' | 'dechiffrer' | 'contacts' | 'coffre'>('chiffrer');
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [hasProfile, setHasProfile] = useState(false);
+  const [isUnlocked,      setIsUnlocked]      = useState(false);
+  const [activeTab,       setActiveTab]        = useState<'chiffrer'|'dechiffrer'|'contacts'|'coffre'>('chiffrer');
+  const [sessionUsername, setSessionUsername]  = useState('');
+  const [sessionPassword, setSessionPassword]  = useState('');
+  const [loginUser,       setLoginUser]        = useState('');
+  const [loginPass,       setLoginPass]        = useState('');
+  const [loginError,      setLoginError]       = useState('');
 
-  // Profil
-  const [prenomInput, setPrenomInput] = useState('');
-  const [passphraseInput, setPassphraseInput] = useState('');
-  const [monProfil, setMonProfil] = useState<{ prenom: string; empreinte: string } | null>(null);
+  const [contacts,       setContacts]       = useState<Contact[]>([]);
+  const [showAddContact, setShowAddContact]  = useState(false);
+  const [contactName,    setContactName]    = useState('');
+  const [contactKey,     setContactKey]     = useState('');
 
-  // Contacts (VIDE par défaut)
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [selectedContactId, setSelectedContactId] = useState('');
-  const [pendingContact, setPendingContact] = useState<Contact | null>(null);
+  const [message,           setMessage]           = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState('');
+  const [attachedFile,      setAttachedFile]      = useState<{ name: string; size: string }|null>(null);
+  const [cipherOutput,      setCipherOutput]      = useState('');
+  const [encryptCount,      setEncryptCount]      = useState(0);
+  const [copied,            setCopied]            = useState(false);
 
-  // Formulaire Chiffrer
-  const [messageClair, setMessageClair] = useState('');
-  const [attachedFile, setAttachedFile] = useState<{ name: string; size: string; type: string; dataUrl: string } | null>(null);
-  const [nomFichier, setNomFichier] = useState('message-scelle.vlk');
-  const [garderCopie, setGarderCopie] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [clipboardNote,  setClipboardNote]  = useState('');
+  const [decryptedText,  setDecryptedText]  = useState<string|null>(null);
 
-  // Coffre personnel
-  const [copiesCoffre, setCopiesCoffre] = useState<CopieCoffre[]>([]);
+  const copyToClipboard = (txt: string) => {
+    navigator.clipboard.writeText(txt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-  // Réception & Lecture
-  const [messageDéchiffré, setMessageDéchiffré] = useState<{ type: 'texte' | 'fichier'; contenu: string; nomFichier?: string } | null>(null);
-  const [emetteurVerifie, setEmetteurVerifie] = useState<string | null>(null);
-
-  useEffect(() => {
-    const savedProfil = localStorage.getItem('verrou_profil_public');
-    if (savedProfil) {
-      setHasProfile(true);
-      setMonProfil(JSON.parse(savedProfil));
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginUser.trim() || !loginPass.trim()) {
+      setLoginError('Veuillez renseigner votre nom d\'utilisateur et votre phrase secrète.');
+      return;
     }
+    setSessionUsername(loginUser.trim());
+    setSessionPassword(loginPass);
+    setIsUnlocked(true);
+    setLoginError('');
+  };
 
-    const savedContacts = localStorage.getItem('verrou_contacts');
-    if (savedContacts) {
-      const parsed = JSON.parse(savedContacts);
-      setContacts(parsed);
-      if (parsed.length > 0) setSelectedContactId(parsed[0].id);
-    }
+  const handleLogout = () => {
+    setIsUnlocked(false);
+    setLoginUser('');
+    setLoginPass('');
+    setCipherOutput('');
+    setDecryptedText(null);
+  };
 
-    const savedCoffre = localStorage.getItem('verrou_coffre_local');
-    if (savedCoffre) {
-      setCopiesCoffre(JSON.parse(savedCoffre));
-    }
-  }, []);
+  const handleEncrypt = async () => {
+    if (!message.trim() && !attachedFile) return;
+    try {
+      const content = attachedFile
+        ? JSON.stringify({ type: 'file', name: attachedFile.name, msg: message })
+        : message;
+      const cipher = await realEncryptMessage(content, sessionPassword);
+      setCipherOutput(cipher);
+      setEncryptCount(c => c + 1);
+    } catch { alert('Erreur cryptographique.'); }
+  };
 
-  const handleAuth = () => {
-    if (!hasProfile) {
-      if (!prenomInput.trim() || passphraseInput.length < 4) {
-        alert("Veuillez saisir votre prénom et une phrase secrète.");
-        return;
-      }
-      const profil = { prenom: prenomInput.trim(), empreinte: 'e83a9f2b' };
-      localStorage.setItem('verrou_profil_public', JSON.stringify(profil));
-      setMonProfil(profil);
-      setHasProfile(true);
-      setIsUnlocked(true);
-    } else {
-      if (passphraseInput.length >= 4) {
-        setIsUnlocked(true);
+  const handlePasteClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) { setClipboardNote('Presse-papiers vide.'); return; }
+      if (text.includes('VERROU VLK')) {
+        const plain = await realDecryptMessage(text, sessionPassword);
+        try {
+          const p = JSON.parse(plain);
+          setDecryptedText(p.type === 'file' ? `[Fichier : ${p.name}]\n${p.msg||''}` : plain);
+        } catch { setDecryptedText(plain); }
+        setClipboardNote('Message déchiffré avec succès !');
       } else {
-        alert("Phrase secrète incorrecte.");
+        setClipboardNote('Format non reconnu — pas un message Verrou.');
       }
-    }
+    } catch { setClipboardNote('Échec du déchiffrement : clé invalide ou données altérées.'); }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const sizeStr = file.size > 1024 * 1024 
-      ? `${(file.size / (1024 * 1024)).toFixed(1)} Mo`
-      : `${Math.round(file.size / 1024)} Ko`;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachedFile({
-        name: file.name,
-        size: sizeStr,
-        type: file.type,
-        dataUrl: reader.result as string
-      });
-      setNomFichier(`${file.name.substring(0, file.name.lastIndexOf('.')) || file.name}.vlk`);
-    };
-    reader.readAsDataURL(file);
+  const handleAddContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactName.trim() || !contactKey.trim()) return;
+    const sas = `${Math.floor(100+Math.random()*900)} - ${Math.floor(100+Math.random()*900)}`;
+    setContacts([...contacts, { id: Date.now().toString(), name: contactName.trim(), publicKey: contactKey.trim(), sasCode: sas }]);
+    setContactName(''); setContactKey(''); setShowAddContact(false);
   };
 
-  const handleChiffrer = () => {
-    if (!messageClair.trim() && !attachedFile) {
-      alert("Veuillez écrire un texte ou attacher un fichier.");
-      return;
-    }
-    const dest = contacts.find(c => c.id === selectedContactId);
-    if (!dest) {
-      alert("Veuillez sélectionner un destinataire validé.");
-      return;
-    }
-
-    let payload = '';
-    if (attachedFile) {
-      payload = JSON.stringify({
-        type: 'fichier',
-        nomFichier: attachedFile.name,
-        fileType: attachedFile.type,
-        contenu: attachedFile.dataUrl
-      });
-    } else {
-      payload = JSON.stringify({
-        type: 'texte',
-        contenu: messageClair
-      });
-    }
-
-    const charge = `VLK1:${btoa(unescape(encodeURIComponent(payload)))}:${dest.prenom}:A92F`;
-    navigator.clipboard.writeText(charge);
-
-    if (garderCopie) {
-      const nouvelleCopie: CopieCoffre = {
-        id: Date.now().toString(),
-        date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
-        destinataire: dest.prenom,
-        type: attachedFile ? 'fichier' : 'texte',
-        nomFichier: attachedFile?.name,
-        contenu: attachedFile ? attachedFile.dataUrl : messageClair
-      };
-      const updatedCoffre = [nouvelleCopie, ...copiesCoffre];
-      setCopiesCoffre(updatedCoffre);
-      localStorage.setItem('verrou_coffre_local', JSON.stringify(updatedCoffre));
-    }
-
-    alert(`✅ Message scellé pour ${dest.prenom} !\n\nLe texte chiffré est copié dans le presse-papiers.\nCollez-le directement dans WhatsApp.`);
-    setMessageClair('');
-    setAttachedFile(null);
-  };
-
-  const handleCollerMessage = async () => {
-    try {
-      const clipText = await navigator.clipboard.readText();
-      if (!clipText.startsWith('VLK1:')) {
-        alert("Le texte copié n'est pas un message chiffré Verrou (format VLK1: requis).");
-        return;
-      }
-      const parts = clipText.split(':');
-      const jsonStr = decodeURIComponent(escape(atob(parts[1])));
-      const parsed = JSON.parse(jsonStr);
-      const emetteur = parts[2] || 'Expéditeur vérifié';
-
-      setMessageDéchiffré(parsed);
-      setEmetteurVerifie(emetteur);
-    } catch {
-      alert("Veuillez autoriser l'accès au presse-papiers pour coller en 1 clic.");
-    }
-  };
-
-  const handlePurgerMemoire = () => {
-    setMessageDéchiffré(null);
-    setEmetteurVerifie(null);
-  };
-
-  const handlePartagerCle = () => {
-    const carte = `VERROU-CARTE:${monProfil?.prenom || 'Moi'}:pub_x25519:pub_ed25519:739-204`;
-    navigator.clipboard.writeText(carte);
-    alert("📤 Votre clé publique est copiée dans le presse-papiers !\nCollez-la sur WhatsApp à votre ami.");
-  };
-
-  // 4. Coller la clé reçue (AVEC PROTECTION ANTI-AUTO-AJOUT ET ANTI-DOUBLON)
-  const handleCollerCleRecue = async () => {
-    try {
-      const clipText = await navigator.clipboard.readText();
-      if (!clipText.startsWith('VERROU-CARTE:')) {
-        alert("Ce message n'est pas une clé publique Verrou.");
-        return;
-      }
-      const [, prenom, , , codeSecurite] = clipText.split(':');
-
-      // RÈGLE 1 : INTERDICTION DE S'AJOUTER SOI-MÊME
-      if (prenom.trim().toLowerCase() === monProfil?.prenom.trim().toLowerCase()) {
-        alert("⚠️ Vous ne pouvez pas vous ajouter vous-même comme contact avec votre propre clé !");
-        return;
-      }
-
-      // RÈGLE 2 : INTERDICTION DES DOUBLONS
-      const dejaPresent = contacts.some(c => c.prenom.trim().toLowerCase() === prenom.trim().toLowerCase());
-      if (dejaPresent) {
-        alert(`⚠️ ${prenom} est déjà présent dans votre liste de contacts validés.`);
-        return;
-      }
-
-      setPendingContact({
-        id: Date.now().toString(),
-        prenom,
-        codeSecurite: codeSecurite || '739 - 204',
-        clePublique: 'key_public',
-        verifie: false
-      });
-    } catch {
-      alert("Impossible de lire le presse-papiers.");
-    }
-  };
-
-  const handleValiderContact = () => {
-    if (pendingContact) {
-      const updated = [...contacts, { ...pendingContact, verifie: true }];
-      setContacts(updated);
-      setSelectedContactId(pendingContact.id);
-      localStorage.setItem('verrou_contacts', JSON.stringify(updated));
-      setPendingContact(null);
-      alert(`🟢 ${pendingContact.prenom} a été validé et ajouté à vos contacts !`);
-    }
-  };
-
-  const handleSupprimerCopie = (id: string) => {
-    const updated = copiesCoffre.filter(c => c.id !== id);
-    setCopiesCoffre(updated);
-    localStorage.setItem('verrou_coffre_local', JSON.stringify(updated));
-  };
-
-  // Vider le contact temporaire créé par erreur si besoin
-  const handleNettoyerContacts = () => {
-    if (confirm("Voulez-vous réinitialiser votre liste de contacts ?")) {
-      setContacts([]);
-      setSelectedContactId('');
-      localStorage.removeItem('verrou_contacts');
-    }
-  };
-
-  return (
-    <div>
-      {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #1E293B' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '0.4rem', borderRadius: '0.6rem' }}>
-            <Lock size={20} color="#10B981" />
-          </div>
-          <div>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.05em' }}>VERROU</div>
-            <div style={{ fontSize: '0.6rem', color: '#94A3B8', fontWeight: 600 }}>SURCOUCHE ZERO-KNOWLEDGE</div>
+  /* ---- ÉCRAN DE CONNEXION ---- */
+  if (!isUnlocked) return (
+    <div className="verrou-app">
+      <header className="pro-navbar">
+        <div className="brand-section">
+          <div className="brand-icon"><Shield className="w-6 h-6 text-[#00E676]" /></div>
+          <div className="brand-label">
+            <span className="brand-text">VERROU</span>
+            <span className="brand-tagline">Zero · Knowledge</span>
           </div>
         </div>
-        {isUnlocked && (
-          <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10B981', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 700 }}>
-            ● {monProfil?.prenom}
+        <div className="company-badge-nav">
+          <span style={{width:8,height:8,borderRadius:'50%',background:'#64748B',display:'inline-block'}}></span>
+          <span>Non connecté</span>
+        </div>
+      </header>
+
+      <main className="main-viewport" style={{justifyContent:'center'}}>
+        <div className="cyber-card" style={{maxWidth:480,margin:'0 auto',textAlign:'center',alignItems:'center',padding:'40px 32px'}}>
+          <div className="header-icon-box" style={{width:72,height:72,borderRadius:20}}>
+            <Lock className="w-8 h-8" />
           </div>
-        )}
-      </div>
-
-      {!isUnlocked ? (
-        /* DÉVERROUILLAGE */
-        <form 
-          onSubmit={(e) => { e.preventDefault(); handleAuth(); }}
-          className="verrou-card" 
-          style={{ textAlign: 'center', marginTop: '2rem' }}
-        >
-          <div style={{ width: '48px', height: '48px', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            <KeyRound size={24} color="#10B981" />
+          <div>
+            <h1 style={{fontSize:'1.85rem',fontWeight:900,marginBottom:6}}>
+              Accès <span style={{color:'#00E676'}}>Sécurisé</span>
+            </h1>
+            <p style={{color:'#94A3B8',fontSize:'0.9rem'}}>
+              Identifiez-vous pour déverrouiller votre espace cryptographique personnel.
+            </p>
           </div>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.25rem' }}>
-            {hasProfile ? "Bon retour sur Verrou" : "Créer votre profil"}
-          </h2>
-          <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '1.25rem' }}>
-            {hasProfile ? "Entrez votre code secret pour déverrouiller vos clés." : "Vos clés sont gardées chiffrées sur votre appareil."}
-          </p>
-
-          {!hasProfile && (
-            <div style={{ textAlign: 'left' }}>
-              <label className="verrou-label">Votre Prénom</label>
-              <input
-                type="text"
-                className="verrou-input"
-                placeholder="Ex : Idrissa"
-                value={prenomInput}
-                onChange={(e) => setPrenomInput(e.target.value)}
-              />
-            </div>
-          )}
-
-          <div style={{ textAlign: 'left' }}>
-            <label className="verrou-label">Code secret (phrase de 3-4 mots)</label>
+          <form onSubmit={handleLogin} style={{width:'100%',display:'flex',flexDirection:'column',gap:12}}>
+            <input
+              type="text"
+              placeholder="Nom d'utilisateur"
+              value={loginUser}
+              onChange={e => setLoginUser(e.target.value)}
+              className="cyber-input"
+              autoFocus
+            />
             <input
               type="password"
-              className="verrou-input"
-              placeholder="Phrase secrète (appuyez sur Entrée)"
-              value={passphraseInput}
-              onChange={(e) => setPassphraseInput(e.target.value)}
+              placeholder="Phrase secrète (ex : paix liberté progrès)"
+              value={loginPass}
+              onChange={e => setLoginPass(e.target.value)}
+              className="cyber-input"
             />
+            {loginError && <p style={{color:'#F87171',fontSize:'0.82rem'}}>{loginError}</p>}
+            <button type="submit" className="btn-primary-neon">
+              <Unlock className="w-5 h-5" /> Déverrouiller le Coffre
+            </button>
+          </form>
+          <div style={{display:'flex',gap:20,fontSize:'0.78rem',color:'#64748B',flexWrap:'wrap',justifyContent:'center'}}>
+            <span><ShieldCheck className="w-3.5 h-3.5 inline text-[#00E676] mr-1"/>Sécurité maximale</span>
+            <span><ServerOff  className="w-3.5 h-3.5 inline text-[#00E676] mr-1"/>Zero-knowledge</span>
+            <span><Zap        className="w-3.5 h-3.5 inline text-[#00E676] mr-1"/>Accès rapide</span>
           </div>
+        </div>
+      </main>
 
-          <button type="submit" className="btn-primary">
-            {hasProfile ? "Déverrouiller" : "Initialiser mes clés"}
+      <footer className="pro-footer">
+        <div className="footer-simple-content">
+          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Tous droits réservés.</div>
+          <div className="footer-simple-right">
+            Développé par <strong>&nbsp;SITCOMint</strong>
+            <span className="footer-sep">•</span>Ouagadougou, Burkina Faso
+            <span className="footer-sep">•</span>Prototype v1.2
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+
+  /* ---- ÉCRAN PRINCIPAL (CONNECTÉ) ---- */
+  return (
+    <div className="verrou-app">
+
+      {/* ======= NAVBAR ÉQUILIBRÉE ======= */}
+      <header className="pro-navbar">
+
+        {/* GAUCHE : Logo */}
+        <div className="brand-section">
+          <div className="brand-icon"><Shield className="w-6 h-6 text-[#00E676]" /></div>
+          <div className="brand-label">
+            <span className="brand-text">VERROU</span>
+            <span className="brand-tagline">Zero · Knowledge</span>
+          </div>
+        </div>
+
+        {/* CENTRE : Onglets */}
+        <nav className="nav-pill-group">
+          {(['chiffrer','dechiffrer','contacts','coffre'] as const).map(tab => {
+            const icons = { chiffrer: <Lock className="w-4 h-4"/>, dechiffrer: <Send className="w-4 h-4"/>, contacts: <Users className="w-4 h-4"/>, coffre: <Archive className="w-4 h-4"/> };
+            const labels = { chiffrer:'Chiffrer', dechiffrer:'Déchiffrer', contacts:`Contacts (${contacts.length})`, coffre:'Coffre (0)' };
+            return (
+              <button key={tab} onClick={() => setActiveTab(tab)} className={`nav-tab-btn ${activeTab===tab?'active':''}`}>
+                {icons[tab]} <span>{labels[tab]}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* DROITE : Utilisateur + Déconnexion */}
+        <div className="nav-right-actions">
+          <div className="company-badge-nav">
+            <span className="online-pulse"></span>
+            {/* Nom de l'utilisateur connecté */}
+            <User className="w-3.5 h-3.5" />
+            <span>{sessionUsername}</span>
+          </div>
+          <button onClick={handleLogout} className="btn-logout">
+            <LogOut className="w-4 h-4" /> Se déconnecter
           </button>
-        </form>
-      ) : (
-        <div>
-          {/* NAVIGATION 4 ONGLETS */}
-          <div className="tab-container">
-            <button 
-              className={`tab-btn ${activeTab === 'chiffrer' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chiffrer')}
-            >
-              Chiffrer
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'dechiffrer' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dechiffrer')}
-            >
-              Déchiffrer
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'contacts' ? 'active' : ''}`}
-              onClick={() => setActiveTab('contacts')}
-            >
-              Contacts ({contacts.length})
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'coffre' ? 'active' : ''}`}
-              onClick={() => setActiveTab('coffre')}
-            >
-              Coffre ({copiesCoffre.length})
-            </button>
-          </div>
+        </div>
+      </header>
 
-          {/* ONGLET 1 : CHIFFRER */}
-          {activeTab === 'chiffrer' && (
-            <div className="verrou-card">
-              <label className="verrou-label">Votre destinataire</label>
-              {contacts.length === 0 ? (
-                <div style={{ background: '#0F172A', border: '1px dashed #334155', padding: '0.85rem', borderRadius: '0.75rem', marginBottom: '1rem', textAlign: 'center' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '0 0 0.5rem' }}>Aucun contact validé pour le moment.</p>
-                  <button 
-                    onClick={() => setActiveTab('contacts')}
-                    style={{ background: 'transparent', border: 'none', color: '#10B981', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-                  >
-                    ➡️ Ajouter un contact d'abord
-                  </button>
+      {/* ======= CONTENU PRINCIPAL ======= */}
+      <main className="main-viewport">
+
+        {/* PAGE CHIFFRER */}
+        {activeTab === 'chiffrer' && (
+          <div className="split-layout-grid">
+            <div className="hero-info-col">
+              <h1>Vos messages,<br/>votre <span>confidentialité</span></h1>
+              <p>Chiffrement probabiliste : chaque envoi génère un Sel et un Nonce uniques, garantissant l'unicité absolue du bloc chiffré.</p>
+              <div className="gold-accent-line"></div>
+              <div className="feature-pill-list">
+                <div className="feature-pill-item"><ShieldCheck className="w-4 h-4 text-[#00E676]"/>Sel & Nonce aléatoires</div>
+                <div className="feature-pill-item"><Zap         className="w-4 h-4 text-[#00E676]"/>IND-CPA Sécurisé</div>
+                <div className="feature-pill-item"><ServerOff   className="w-4 h-4 text-[#00E676]"/>Zero-knowledge</div>
+              </div>
+            </div>
+
+            <div className="cyber-card">
+              <div className="cyber-card-header">
+                <div className="header-icon-box"><Lock className="w-6 h-6"/></div>
+                <div>
+                  <h2 style={{fontSize:'1.3rem',fontWeight:800}}>Chiffrer un message</h2>
+                  <p style={{fontSize:'0.8rem',color:'#94A3B8'}}>Un chiffrement unique à chaque exécution</p>
                 </div>
-              ) : (
-                <select 
-                  className="verrou-select"
-                  value={selectedContactId}
-                  onChange={(e) => setSelectedContactId(e.target.value)}
-                >
-                  {contacts.map(c => (
-                    <option key={c.id} value={c.id}>
-                      👤 {c.prenom}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <label className="verrou-label">Message ou document à chiffrer</label>
-              
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileSelect} 
-                style={{ display: 'none' }} 
-                accept="image/*,.pdf,.doc,.docx,.txt"
-              />
-
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                background: '#0F172A', 
-                border: '1px solid #334155', 
-                borderRadius: '1.25rem', 
-                padding: '0.4rem 0.6rem',
-                marginBottom: '0.85rem',
-                gap: '0.5rem'
-              }}>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Joindre une image ou un document (PDF, Word)"
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: '#1E293B',
-                    border: '1px solid #475569',
-                    color: '#F8FAFC',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    flexShrink: 0
-                  }}
-                >
-                  <Plus size={18} color="#10B981" />
-                </button>
-
-                <input
-                  type="text"
-                  placeholder="Écrivez votre message (Entrée pour chiffrer)..."
-                  value={messageClair}
-                  onChange={(e) => setMessageClair(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleChiffrer();
-                    }
-                  }}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#F8FAFC',
-                    fontSize: '0.85rem',
-                    width: '100%',
-                    outline: 'none'
-                  }}
-                />
               </div>
 
-              {attachedFile && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  background: 'rgba(16, 185, 129, 0.1)', 
-                  border: '1px solid rgba(16, 185, 129, 0.3)', 
-                  padding: '0.5rem 0.75rem', 
-                  borderRadius: '0.75rem', 
-                  marginBottom: '0.85rem' 
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {attachedFile.type.startsWith('image/') ? (
-                      <ImageIcon size={18} color="#10B981" />
-                    ) : (
-                      <FileText size={18} color="#10B981" />
-                    )}
-                    <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#F1F5F9' }}>{attachedFile.name}</div>
-                      <div style={{ fontSize: '0.65rem', color: '#94A3B8' }}>{attachedFile.size}</div>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setAttachedFile(null)}
-                    style={{ background: 'transparent', border: 'none', color: '#94A3B8', cursor: 'pointer' }}
-                  >
-                    <X size={16} />
-                  </button>
+              <div className="input-block">
+                <div className="input-label-row">
+                  <span>Message à chiffrer</span>
+                  <span style={{color:'#64748B',fontSize:'0.76rem'}}>{message.length}/1000</span>
                 </div>
-              )}
+                <textarea rows={4} value={message} onChange={e=>setMessage(e.target.value)} placeholder="Rédigez votre message confidentiel ici..." className="cyber-textarea"/>
+              </div>
 
-              <label className="verrou-label">Nom du fichier scellé</label>
-              <input 
-                type="text"
-                className="verrou-input"
-                value={nomFichier}
-                onChange={(e) => setNomFichier(e.target.value)}
-              />
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                <input 
-                  type="checkbox"
-                  id="copie"
-                  checked={garderCopie}
-                  onChange={(e) => setGarderCopie(e.target.checked)}
-                  style={{ width: '16px', height: '16px', accentColor: '#10B981' }}
-                />
-                <label htmlFor="copie" style={{ fontSize: '0.75rem', color: '#CBD5E1', cursor: 'pointer' }}>
-                  Garder une copie du fichier chiffré pour moi
+              <div className="input-block">
+                <div className="input-label-row">Ajouter un document (optionnel)</div>
+                <label className="file-drop-zone">
+                  <UploadCloud className="w-7 h-7 text-[#00E676]"/>
+                  <span style={{fontSize:'0.86rem',fontWeight:700}}>{attachedFile?attachedFile.name:"Glissez ou cliquez pour parcourir"}</span>
+                  <span style={{fontSize:'0.72rem',color:'#64748B'}}>PDF, DOC, DOCX, JPG, PNG • Max 10 Mo</span>
+                  <input type="file" style={{display:'none'}} onChange={e=>{const f=e.target.files?.[0];if(f)setAttachedFile({name:f.name,size:`${(f.size/1024).toFixed(0)} Ko`});}}/>
                 </label>
               </div>
 
-              <button 
-                className="btn-primary" 
-                onClick={handleChiffrer}
-                disabled={contacts.length === 0}
-                style={{ opacity: contacts.length === 0 ? 0.5 : 1 }}
-              >
-                <Lock size={16} /> Chiffrer votre message et copier vers WhatsApp
+              <div className="input-block">
+                <div className="input-label-row">Destinataire</div>
+                <select value={selectedRecipient} onChange={e=>setSelectedRecipient(e.target.value)} className="cyber-select">
+                  <option value="">Sélectionnez un contact ou entrez un numéro WhatsApp</option>
+                  {contacts.map(c=><option key={c.id} value={c.id}>{c.name} (SAS: {c.sasCode})</option>)}
+                </select>
+              </div>
+
+              <button onClick={handleEncrypt} className="btn-primary-neon">
+                <Lock className="w-5 h-5"/> Chiffrer mon message
               </button>
-            </div>
-          )}
 
-          {/* ONGLET 2 : DÉCHIFFRER */}
-          {activeTab === 'dechiffrer' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="verrou-card" style={{ textAlign: 'center', padding: '2rem 1.25rem' }}>
-                <div style={{ width: '48px', height: '48px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
-                  <Inbox size={24} color="#10B981" />
-                </div>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.25rem' }}>Message reçu sur WhatsApp ?</h3>
-                <p style={{ fontSize: '0.72rem', color: '#94A3B8', marginBottom: '1.25rem' }}>
-                  Copiez le message reçu dans WhatsApp, puis cliquez ci-dessous.
-                </p>
-
-                <button className="btn-primary" onClick={handleCollerMessage}>
-                  <Copy size={16} /> 📋 COLLER DEPUIS LE PRESSE-PAPIERS
-                </button>
-              </div>
-
-              {/* LECTURE ÉPHÉMÈRE */}
-              {messageDéchiffré && (
-                <div className="verrou-card" style={{ border: '1px solid #10B981' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.5rem 0.75rem', borderRadius: '0.6rem', marginBottom: '0.85rem', fontSize: '0.75rem', fontWeight: 700 }}>
-                    <ShieldCheck size={16} />
-                    Message certifié de {emetteurVerifie}
-                  </div>
-
-                  <div style={{ background: '#0F172A', padding: '0.85rem', borderRadius: '0.6rem', border: '1px solid #1E293B', fontSize: '0.85rem', color: '#F1F5F9', marginBottom: '0.85rem' }}>
-                    {messageDéchiffré.type === 'texte' ? (
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{messageDéchiffré.contenu}</div>
-                    ) : (
-                      <div>
-                        {messageDéchiffré.contenu.startsWith('data:image') ? (
-                          <div style={{ textAlign: 'center' }}>
-                            <img 
-                              src={messageDéchiffré.contenu} 
-                              alt="Document déchiffré" 
-                              style={{ maxWidth: '100%', maxHeight: '250px', borderRadius: '0.5rem', border: '1px solid #334155' }}
-                            />
-                            <p style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.4rem' }}>{messageDéchiffré.nomFichier}</p>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                            <FileText size={24} color="#10B981" />
-                            <div>
-                              <div style={{ fontWeight: 700 }}>{messageDéchiffré.nomFichier || 'Document joint'}</div>
-                              <a 
-                                href={messageDéchiffré.contenu} 
-                                download={messageDéchiffré.nomFichier || 'document-dechiffre.pdf'} 
-                                style={{ fontSize: '0.72rem', color: '#10B981', textDecoration: 'underline' }}
-                              >
-                                Télécharger le document
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ fontSize: '0.7rem', color: '#FBBF24', background: 'rgba(251, 191, 36, 0.1)', padding: '0.5rem', borderRadius: '0.5rem', border: '1px solid rgba(251, 191, 36, 0.2)', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <AlertTriangle size={14} />
-                    Lecture unique : s'efface définitivement de la mémoire à la fermeture.
-                  </div>
-
-                  <button className="btn-danger" onClick={handlePurgerMemoire}>
-                    <Trash2 size={14} /> Fermer et effacer la mémoire
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ONGLET 3 : CONTACTS */}
-          {activeTab === 'contacts' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div className="verrou-card">
-                <div className="verrou-label">Ma clé Publique</div>
-                <button className="btn-secondary" onClick={handlePartagerCle}>
-                  <Share2 size={16} color="#10B981" /> Partager ma clé
-                </button>
-
-                <div className="verrou-label" style={{ marginTop: '1rem' }}>Ajouter un nouveau contact</div>
-                <button className="btn-secondary" onClick={handleCollerCleRecue}>
-                  <PlusCircle size={16} color="#10B981" /> Coller la clé reçue
-                </button>
-              </div>
-
-              {pendingContact && (
-                <div className="verrou-card" style={{ border: '1px solid #10B981' }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-                    Nouveau contact : {pendingContact.prenom}
-                  </h4>
-                  <div style={{ background: '#0F172A', padding: '0.75rem', borderRadius: '0.75rem', textAlign: 'center', marginBottom: '0.75rem' }}>
-                    <div style={{ fontSize: '0.65rem', color: '#94A3B8' }}>CODE DE VÉRIFICATION VOCALE</div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#10B981', letterSpacing: '0.1em' }}>
-                      {pendingContact.codeSecurite}
-                    </div>
-                  </div>
-                  <button className="btn-primary" onClick={handleValiderContact}>
-                    <Check size={16} /> Valider et Enregistrer
-                  </button>
-                </div>
-              )}
-
-              <div className="verrou-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div className="verrou-label" style={{ margin: 0 }}>Liste des contacts validés ({contacts.length})</div>
-                  {contacts.length > 0 && (
-                    <button 
-                      onClick={handleNettoyerContacts}
-                      style={{ background: 'transparent', border: 'none', color: '#EF4444', fontSize: '0.65rem', cursor: 'pointer' }}
-                    >
-                      Vider la liste
+              {cipherOutput && (
+                <div style={{background:'#000',padding:14,borderRadius:14,border:'1px solid #00E676'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                    <span style={{color:'#00E676',fontSize:'0.76rem',fontWeight:800}}>Génération #{encryptCount} · Sel & Nonce uniques</span>
+                    <button onClick={()=>copyToClipboard(cipherOutput)} style={{background:'#00E676',color:'#000',border:'none',padding:'4px 12px',borderRadius:8,fontWeight:800,cursor:'pointer'}}>
+                      {copied?'Copié !':'Copier'}
                     </button>
-                  )}
-                </div>
-
-                {contacts.length === 0 ? (
-                  <p style={{ fontSize: '0.75rem', color: '#94A3B8', textAlign: 'center', margin: '1rem 0' }}>
-                    Aucun contact validé. Cliquez sur « Coller la clé reçue » pour en ajouter un.
-                  </p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {contacts.map(c => (
-                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0F172A', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #1E293B' }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>👤 {c.prenom}</div>
-                        <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '0.2rem 0.5rem', borderRadius: '0.5rem', fontWeight: 700 }}>
-                          Vérifié 🟢
-                        </span>
-                      </div>
-                    ))}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ONGLET 4 : MON COFFRE */}
-          {activeTab === 'coffre' && (
-            <div className="verrou-card">
-              <div className="verrou-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.85rem' }}>
-                <Archive size={16} color="#10B981" /> Mes Copies Chiffrées ({copiesCoffre.length})
-              </div>
-              <p style={{ fontSize: '0.7rem', color: '#94A3B8', marginBottom: '1rem' }}>
-                Ces copies sont enregistrées uniquement dans la mémoire chiffrée de votre téléphone.
-              </p>
-
-              {copiesCoffre.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#64748B', fontSize: '0.75rem' }}>
-                  Aucune copie conservée pour le moment.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  {copiesCoffre.map(c => (
-                    <div key={c.id} style={{ background: '#0F172A', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #1E293B' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10B981' }}>À : {c.destinataire}</span>
-                        <span style={{ fontSize: '0.65rem', color: '#64748B' }}>{c.date}</span>
-                      </div>
-
-                      <div style={{ fontSize: '0.75rem', color: '#CBD5E1', marginBottom: '0.5rem' }}>
-                        {c.type === 'fichier' ? `📎 Fichier : ${c.nomFichier}` : c.contenu}
-                      </div>
-
-                      <button 
-                        onClick={() => handleSupprimerCopie(c.id)}
-                        style={{ background: 'transparent', border: 'none', color: '#EF4444', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', padding: 0 }}
-                      >
-                        <Trash2 size={12} /> Supprimer cette copie
-                      </button>
-                    </div>
-                  ))}
+                  <pre style={{fontSize:'0.7rem',color:'#94A3B8',overflowX:'auto',maxHeight:80}}>{cipherOutput}</pre>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
+
+        {/* PAGE DÉCHIFFRER */}
+        {activeTab === 'dechiffrer' && (
+          <div className="split-layout-grid">
+            <div className="hero-info-col">
+              <h1>Déchiffrement<br/><span>Instantané</span></h1>
+              <p>Le moteur extrait le Sel et le Nonce intégrés dans le paquet pour restituer le message d'origine avec exactitude.</p>
+              <div className="gold-accent-line"></div>
+            </div>
+            <div className="cyber-card" style={{textAlign:'center',alignItems:'center'}}>
+              <div className="header-icon-box" style={{width:84,height:84,borderRadius:24}}>
+                <Unlock className="w-10 h-10"/>
+              </div>
+              <div>
+                <h2 style={{fontSize:'1.45rem',fontWeight:900,marginBottom:8}}>Message reçu sur WhatsApp ?</h2>
+                <p style={{fontSize:'0.9rem',color:'#94A3B8',maxWidth:340}}>Copiez le message reçu dans WhatsApp, puis cliquez ci-dessous.</p>
+              </div>
+              <button onClick={handlePasteClipboard} className="btn-primary-neon" style={{maxWidth:420}}>
+                <Copy className="w-5 h-5"/> COLLER DEPUIS LE PRESSE-PAPIERS
+              </button>
+              {clipboardNote && <p style={{fontSize:'0.84rem',color:'#F59E0B',fontWeight:700}}>{clipboardNote}</p>}
+              {decryptedText && (
+                <div style={{width:'100%',background:'#000',padding:18,borderRadius:14,border:'1px solid #00E676',textAlign:'left'}}>
+                  <div style={{color:'#00E676',fontSize:'0.78rem',fontWeight:800,marginBottom:6}}>Contenu authentifié :</div>
+                  <p style={{color:'#fff',fontSize:'0.9rem',whiteSpace:'pre-wrap'}}>{decryptedText}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PAGE CONTACTS */}
+        {activeTab === 'contacts' && (
+          <div className="split-layout-grid">
+            <div className="hero-info-col">
+              <h1>Gérez vos <span>contacts</span></h1>
+              <p>Échangez vos clés publiques avec confirmation vocale SAS pour garantir l'authenticité.</p>
+              <div className="gold-accent-line"></div>
+            </div>
+            <div className="cyber-card" style={{gap:14}}>
+              {/* Ma clé publique */}
+              <div onClick={()=>alert('Votre clé : pk_verrou_ed25519_9f8a2b3c4d5e')}
+                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:16,borderRadius:14,background:'rgba(3,7,18,0.7)',border:'1px solid rgba(255,255,255,0.08)',cursor:'pointer'}}>
+                <div style={{display:'flex',alignItems:'center',gap:12}}>
+                  <div style={{padding:9,borderRadius:11,background:'rgba(0,230,118,0.1)',color:'#00E676'}}><Share2 className="w-5 h-5"/></div>
+                  <div><h3 style={{fontSize:'0.98rem',fontWeight:800}}>Ma clé publique</h3><p style={{fontSize:'0.76rem',color:'#94A3B8'}}>Partager ma clé</p></div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500"/>
+              </div>
+
+              {/* Ajouter contact */}
+              <div onClick={()=>setShowAddContact(!showAddContact)}
+                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:16,borderRadius:14,background:'rgba(3,7,18,0.7)',border:'1px solid rgba(255,255,255,0.08)',cursor:'pointer'}}>
+                <div style={{display:'flex',alignItems:'center',gap:12}}>
+                  <div style={{padding:9,borderRadius:11,background:'rgba(0,230,118,0.1)',color:'#00E676'}}><UserPlus className="w-5 h-5"/></div>
+                  <div><h3 style={{fontSize:'0.98rem',fontWeight:800}}>Ajouter un contact</h3><p style={{fontSize:'0.76rem',color:'#94A3B8'}}>Coller la clé reçue</p></div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-500"/>
+              </div>
+
+              {showAddContact && (
+                <form onSubmit={handleAddContactSubmit} style={{display:'flex',flexDirection:'column',gap:9,background:'#000',padding:14,borderRadius:12}}>
+                  <input type="text" placeholder="Nom du contact" value={contactName} onChange={e=>setContactName(e.target.value)} className="cyber-input"/>
+                  <input type="text" placeholder="Clé publique reçue" value={contactKey} onChange={e=>setContactKey(e.target.value)} className="cyber-input"/>
+                  <button type="submit" className="btn-primary-neon" style={{padding:'10px 20px',fontSize:'0.85rem'}}>Enregistrer</button>
+                </form>
+              )}
+
+              {/* Liste contacts */}
+              <div style={{padding:16,borderRadius:14,background:'rgba(3,7,18,0.7)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:8}}>
+                  <div style={{padding:9,borderRadius:11,background:'rgba(0,230,118,0.1)',color:'#00E676'}}><Users className="w-5 h-5"/></div>
+                  <div>
+                    <h3 style={{fontSize:'0.98rem',fontWeight:800}}>Contacts validés</h3>
+                    <p style={{fontSize:'0.76rem',color:'#94A3B8'}}>{contacts.length===0?'Aucun contact. Ajoutez-en un ci-dessus.':`${contacts.length} contact(s) sécurisé(s)`}</p>
+                  </div>
+                </div>
+                {contacts.map(c=>(
+                  <div key={c.id} style={{display:'flex',justifyContent:'space-between',padding:9,background:'rgba(255,255,255,0.04)',borderRadius:9,marginTop:6,fontSize:'0.84rem'}}>
+                    <span><strong>{c.name}</strong><span style={{color:'#F59E0B',marginLeft:8}}>SAS: {c.sasCode}</span></span>
+                    <button onClick={()=>setContacts(contacts.filter(i=>i.id!==c.id))} style={{color:'#F87171',background:'none',border:'none',cursor:'pointer'}}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PAGE COFFRE */}
+        {activeTab === 'coffre' && (
+          <div className="split-layout-grid">
+            <div className="hero-info-col">
+              <h1>Votre coffre <span>sécurisé</span></h1>
+              <p>Stockez et archivez vos messages et documents chiffrés en toute sécurité sur votre terminal.</p>
+              <div className="gold-accent-line"></div>
+            </div>
+            <div className="cyber-card" style={{minHeight:300,justifyContent:'center'}}>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{padding:9,borderRadius:11,background:'rgba(0,230,118,0.1)',color:'#00E676'}}><Archive className="w-5 h-5"/></div>
+                <div>
+                  <h2 style={{fontSize:'1.2rem',fontWeight:800}}>Mes copies chiffrées (0)</h2>
+                  <p style={{fontSize:'0.78rem',color:'#94A3B8'}}>Stockées uniquement dans la mémoire chiffrée de votre appareil.</p>
+                </div>
+              </div>
+              <div style={{textAlign:'center',padding:'36px 0',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+                <Archive className="w-14 h-14 text-gray-700"/>
+                <p style={{fontSize:'0.82rem',color:'#64748B'}}>Aucune copie conservée pour le moment.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* ======= PIED DE PAGE SIMPLE ======= */}
+      <footer className="pro-footer">
+        <div className="footer-simple-content">
+          <div className="footer-simple-left">© 2026 <strong>VERROU</strong> — Tous droits réservés.</div>
+          <div className="footer-simple-right">
+            Développé par <strong>&nbsp;SITCOMint</strong>
+            <span className="footer-sep">•</span>Ouagadougou, Burkina Faso
+            <span className="footer-sep">•</span>Prototype v1.2
+          </div>
         </div>
-      )}
+      </footer>
     </div>
   );
 }

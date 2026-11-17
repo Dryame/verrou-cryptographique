@@ -1,151 +1,786 @@
-/* DESIGN SYSTÈME VERROU (Dark Mode & Émeraude) */
-* {
+/* ===== THEME ULTRA-MODERNE VERROU x SITCOMint - FULL RESPONSIVE ===== */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-deep: #030712;
+  --bg-card: rgba(11, 20, 36, 0.94);
+  --green-neon: #00E676;
+  --green-glow: rgba(0, 230, 118, 0.4);
+  --yellow-gold: #F59E0B;
+  --text-white: #FFFFFF;
+  --text-gray: #94A3B8;
+  --text-muted: #64748B;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-neon: rgba(0, 230, 118, 0.25);
+}
+
+*, html, body, #root, button, input, textarea, select {
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif !important;
   box-sizing: border-box;
-}
-
-body {
-  background-color: #0B1120;
-  color: #F1F5F9;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 0;
-  display: flex;
-  justify-content: center;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body, #root {
+  width: 100%;
   min-height: 100vh;
+  background-color: var(--bg-deep);
+  color: var(--text-white);
+  overflow-x: hidden;
 }
 
-#root {
-  width: 100%;
-  max-width: 440px;
+.verrou-app {
   min-height: 100vh;
-  padding: 1rem;
-}
-
-/* Cartes et conteneurs */
-.verrou-card {
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(51, 65, 85, 0.8);
-  border-radius: 1.25rem;
-  padding: 1.25rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-}
-
-/* Onglets de navigation */
-.tab-container {
   display: flex;
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid #334155;
-  border-radius: 1rem;
-  padding: 0.25rem;
-  gap: 0.25rem;
-  margin-bottom: 1.25rem;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(0, 230, 118, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 90% 85%, rgba(0, 230, 118, 0.05) 0%, transparent 45%),
+    var(--bg-deep);
 }
 
-.tab-btn {
-  flex: 1;
-  padding: 0.65rem 0.4rem;
-  border-radius: 0.75rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  background: transparent;
-  color: #94A3B8;
-  transition: all 0.2s ease;
-  text-align: center;
+/* ==================== NAVBAR ==================== */
+.pro-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 32px;
+  background: rgba(3, 7, 18, 0.92);
+  border-bottom: 1px solid var(--border-subtle);
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.tab-btn.active {
-  background: #10B981;
-  color: #022C22;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-/* Champs de formulaire */
-.verrou-label {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #94A3B8;
-  margin-bottom: 0.4rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.verrou-input, .verrou-select, .verrou-textarea {
-  width: 100%;
-  background: #0F172A;
-  border: 1px solid #334155;
-  border-radius: 0.75rem;
-  padding: 0.75rem;
-  color: #F8FAFC;
-  font-size: 0.875rem;
-  outline: none;
-  transition: border-color 0.2s;
-  margin-bottom: 0.85rem;
-}
-
-.verrou-input:focus, .verrou-select:focus, .verrou-textarea:focus {
-  border-color: #10B981;
-}
-
-/* Boutons d'action */
-.btn-primary {
-  width: 100%;
-  background: #10B981;
-  color: #022C22;
-  font-weight: 800;
-  padding: 0.9rem;
-  border-radius: 0.85rem;
-  border: none;
-  font-size: 0.875rem;
-  cursor: pointer;
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(0, 230, 118, 0.12);
+  border: 1.5px solid var(--green-neon);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-  transition: transform 0.1s, background-color 0.2s;
+  box-shadow: 0 0 14px var(--green-glow);
 }
 
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.btn-secondary {
-  width: 100%;
-  background: #1E293B;
-  color: #E2E8F0;
-  border: 1px solid #334155;
-  font-weight: 700;
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #334155;
-}
-
-.btn-danger {
-  width: 100%;
-  background: #DC2626;
+.brand-text {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
   color: #FFFFFF;
-  font-weight: 700;
-  padding: 0.8rem;
-  border-radius: 0.75rem;
+}
+
+/* Capsule Centrale */
+.nav-pill-group {
+  display: flex;
+  align-items: center;
+  background: rgba(11, 20, 36, 0.95);
+  padding: 4px 5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.nav-pill-group::-webkit-scrollbar { display: none; }
+
+.nav-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-gray);
+  background: transparent;
   border: none;
-  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.nav-tab-btn:hover { color: #FFFFFF; background: rgba(255,255,255,0.06); }
+
+.nav-tab-btn.active {
+  background: var(--green-neon);
+  color: #030712;
+  font-weight: 800;
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.nav-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.company-badge-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.online-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green-neon);
+  box-shadow: 0 0 8px var(--green-neon);
+  flex-shrink: 0;
+}
+
+.btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 9999px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #F87171;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background: rgba(239,68,68,0.22);
+  border-color: #EF4444;
+  color: #fff;
+}
+
+/* ==================== ZONE CENTRALE ==================== */
+.main-viewport {
+  flex: 1;
+  width: 100%;
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 36px 24px;
+  display: flex;
+  align-items: center;
+}
+
+/* Grille 2 colonnes → 1 colonne sur mobile */
+.split-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 48px;
+  width: 100%;
+  align-items: start;
+}
+
+.hero-info-col h1 {
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+  font-weight: 900;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.hero-info-col h1 span {
+  color: var(--green-neon);
+  text-shadow: 0 0 25px var(--green-glow);
+}
+
+.hero-info-col p {
+  font-size: clamp(0.88rem, 1.5vw, 1.05rem);
+  color: var(--text-gray);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.gold-accent-line {
+  width: 56px;
+  height: 4px;
+  background: var(--green-neon);
+  border-radius: 2px;
+  box-shadow: 0 0 10px var(--green-glow);
+  margin-bottom: 28px;
+}
+
+.feature-pill-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.feature-pill-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-neon);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #E2E8F0;
+}
+
+/* Cartes Vitrées */
+.cyber-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-neon);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(0,230,118,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  backdrop-filter: blur(20px);
+  min-width: 0; /* Empêche le débordement dans la grille */
+}
+
+.cyber-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 16px;
+}
+
+.header-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  background: rgba(0,230,118,0.1);
+  border: 1.5px solid var(--green-neon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-neon);
+  box-shadow: 0 0 14px var(--green-glow);
+  flex-shrink: 0;
+}
+
+.input-block {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.input-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #E2E8F0;
+}
+
+.cyber-textarea, .cyber-select, .cyber-input {
+  width: 100%;
+  background: rgba(3,7,18,0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 13px;
+  padding: 13px 15px;
+  color: #FFFFFF;
+  font-size: 0.92rem;
+  outline: none;
+  transition: all 0.2s ease;
+  min-width: 0;
+}
+
+.cyber-textarea:focus, .cyber-select:focus, .cyber-input:focus {
+  border-color: var(--green-neon);
+  box-shadow: 0 0 14px var(--green-glow);
+}
+
+.cyber-textarea { resize: vertical; }
+
+.file-drop-zone {
+  border: 2px dashed rgba(0,230,118,0.35);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(0,230,118,0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.file-drop-zone:hover {
+  border-color: var(--green-neon);
+  background: rgba(0,230,118,0.06);
+}
+
+.btn-primary-neon {
+  width: 100%;
+  padding: 15px 24px;
+  border-radius: 9999px;
+  background: var(--green-neon);
+  color: #030712;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 9px;
+  box-shadow: 0 0 24px var(--green-glow);
+  transition: all 0.2s ease;
+}
+
+.btn-primary-neon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 34px rgba(0,230,118,0.6);
+}
+
+/* ==================== PIED DE PAGE ==================== */
+.pro-footer {
+  background: rgba(2,5,14,0.98);
+  border-top: 1px solid var(--border-subtle);
+  padding: 36px 32px 20px 32px;
+}
+
+.footer-structured-grid {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.3fr 1.2fr 1fr;
+  gap: 36px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.footer-section h3 {
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.footer-section h3 .gold-title { color: var(--yellow-gold); }
+
+.footer-section p {
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--text-gray);
+  margin-bottom: 8px;
+}
+
+.footer-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.82rem;
+  color: var(--text-gray);
+}
+
+.footer-list li { display: flex; align-items: center; gap: 7px; }
+.footer-list strong { color: #FFFFFF; }
+
+.footer-bottom-bar {
+  max-width: 1220px;
+  margin: 18px auto 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer-bottom-bar strong { color: var(--yellow-gold); }
+
+/* ==================== BREAKPOINTS RESPONSIVE ==================== */
+
+/* Tablette large (< 1100px) */
+@media (max-width: 1100px) {
+  .pro-navbar { padding: 12px 20px; }
+  .split-layout-grid { gap: 32px; }
+  .nav-tab-btn { padding: 7px 13px; font-size: 0.8rem; }
+  .footer-structured-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Tablette (< 900px) : passage en 1 colonne */
+@media (max-width: 900px) {
+  .pro-navbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .brand-section { justify-content: space-between; }
+
+  .nav-pill-group {
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px;
+  }
+
+  .nav-tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 6px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .nav-right-actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .split-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .hero-info-col { order: 2; }
+  .cyber-card { order: 1; }
+
+  .main-viewport {
+    padding: 24px 16px;
+    align-items: flex-start;
+  }
+
+  .footer-structured-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .footer-bottom-bar { justify-content: center; text-align: center; }
+
+  .pro-footer { padding: 24px 16px 16px; }
+}
+
+/* Mobile (< 600px) */
+@media (max-width: 600px) {
+  .brand-text { font-size: 1.25rem; }
+  .brand-icon { width: 36px; height: 36px; }
+
+  .nav-tab-btn {
+    padding: 7px 4px;
+    font-size: 0.7rem;
+  }
+
+  /* Icônes seules sur très petits écrans */
+  .nav-tab-btn span { display: none; }
+
+  .company-badge-nav { padding: 6px 12px; font-size: 0.78rem; }
+  .btn-logout { padding: 6px 12px; font-size: 0.75rem; }
+
+  .hero-info-col h1 { font-size: 1.75rem; }
+  .hero-info-col { order: 2; }
+  .cyber-card { order: 1; padding: 20px 16px; }
+
+  .feature-pill-list { gap: 8px; }
+  .feature-pill-item { font-size: 0.75rem; padding: 6px 10px; }
+
+  .btn-primary-neon { font-size: 0.88rem; padding: 13px 18px; }
+
+  .file-drop-zone { padding: 16px; }
+}
+
+/* Très petit mobile (< 400px) */
+@media (max-width: 400px) {
+  .nav-pill-group { gap: 1px; }
+  .nav-tab-btn { padding: 7px 3px; font-size: 0.65rem; }
+  .hero-info-col h1 { font-size: 1.5rem; }
+  .cyber-card { padding: 16px 12px; }
+}
+
+/* ==================== FOOTER SIMPLE ==================== */
+.pro-footer {
+  background: rgba(2,5,14,0.98) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  padding: 20px 32px !important;
+}
+
+.footer-simple-content {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.footer-simple-left {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.footer-simple-left strong { color: var(--yellow-gold); }
+
+.footer-simple-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.footer-simple-right strong { color: var(--yellow-gold); }
+
+.footer-sep {
+  color: var(--green-neon);
+  margin: 0 8px;
+}
+
+@media (max-width: 600px) {
+  .footer-simple-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+}
+
+/* ===== POLICE SPACE GROTESK (Cyber-Security Design) ===== */
+
+/* Monospace pour les payloads chiffrés et clés cryptographiques */
+pre, code, .cyber-textarea.mono, .cipher-block {
+  font-family: 'Space Mono', 'Courier New', monospace !important;
+  letter-spacing: 0.03em;
+}
+
+/* Titres : Space Grotesk Bold avec tracking serré */
+h1, h2, h3 {
+  font-family: 'Space Grotesk', sans-serif !important;
+  letter-spacing: -0.025em;
+}
+
+/* Boutons : Semi-bold avec tracking léger */
+button {
+  font-family: 'Space Grotesk', sans-serif !important;
+  letter-spacing: 0.01em;
+}
+
+/* Brand VERROU : Uppercase + tracking large */
+.brand-text {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.15em !important;
+}
+
+/* Corps du texte : Regular avec bon interligne */
+body, p, span, label, input, select, textarea, li {
+  font-family: 'Space Grotesk', sans-serif !important;
+  letter-spacing: 0.005em;
+}
+
+/* ===== NAVBAR : CAPSULE UNIQUE BIEN RÉPARTIE ===== */
+
+/* Repositionne les 3 blocs : logo | capsule-onglets | user+déco */
+.pro-navbar {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto !important;
+  align-items: center !important;
+  gap: 20px !important;
+  flex-wrap: nowrap !important;
+}
+
+/* Capsule centrale : les 4 onglets bien répartis */
+.nav-pill-group {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;  /* Répartition égale */
+  background: rgba(8, 15, 32, 0.95) !important;
+  padding: 5px 6px !important;
+  border-radius: 9999px !important;
+  border: 1.5px solid rgba(0, 230, 118, 0.45) !important;
+  box-shadow: 0 0 18px rgba(0, 230, 118, 0.08), inset 0 1px 1px rgba(255,255,255,0.05) !important;
+  width: 100% !important;
+  gap: 2px !important;
+  overflow: visible !important;
+}
+
+/* Chaque onglet prend une part égale de la capsule */
+.nav-tab-btn {
+  flex: 1 !important;
+  justify-content: center !important;
+  padding: 9px 12px !important;
+  border-radius: 9999px !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  gap: 7px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s ease !important;
+}
+
+.nav-tab-btn span {
+  display: inline !important;  /* Toujours visible */
+}
+
+/* Onglet actif : pilule verte éclatante */
+.nav-tab-btn.active {
+  background: #00E676 !important;
+  color: #030712 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 22px rgba(0, 230, 118, 0.5) !important;
+}
+
+/* Actions droite : alignées sur une seule ligne */
+.nav-right-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+  justify-content: flex-end !important;
+}
+
+/* Responsive : sur mobile la grille passe en colonne */
+@media (max-width: 900px) {
+  .pro-navbar {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .nav-pill-group {
+    justify-content: space-between !important;
+  }
+  .nav-right-actions {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .nav-tab-btn span { display: none !important; }
+  .nav-tab-btn { padding: 9px !important; flex: none !important; }
+  .nav-pill-group { justify-content: space-evenly !important; }
+}
+
+/* ===== NAVBAR : ONGLETS SANS ENCADREMENT ===== */
+.nav-pill-group {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* ===== NAVBAR : ONGLETS PLUS RAPPROCHÉS ===== */
+.nav-pill-group {
+  justify-content: center !important;
+  gap: 0px !important;
+}
+
+.nav-tab-btn {
+  flex: none !important;
+  padding: 9px 18px !important;
+}
+
+/* ===== LOGO & VERROU : DESIGN PREMIUM ===== */
+.brand-section {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  cursor: default;
+  user-select: none;
+}
+
+/* Icône bouclier : carré arrondi avec dégradé */
+.brand-icon {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, rgba(0,230,118,0.25) 0%, rgba(0,230,118,0.05) 100%) !important;
+  border: 1.5px solid rgba(0, 230, 118, 0.7) !important;
+  box-shadow: 0 0 18px rgba(0,230,118,0.3), inset 0 1px 1px rgba(255,255,255,0.1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative;
+}
+
+/* Halo pulsant sous l'icône */
+.brand-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 15px;
+  background: radial-gradient(circle, rgba(0,230,118,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Conteneur texte logo */
+.brand-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 2px;
+}
+
+/* Mot VERROU : dégradé vert → blanc */
+.brand-text {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+  background: linear-gradient(90deg, #00E676 0%, #FFFFFF 60%, #00E676 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  text-shadow: none !important;
+}
+
+/* Sous-titre discret */
+.brand-tagline {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  color: rgba(0, 230, 118, 0.6);
+  text-transform: uppercase;
+}
+
+/* ===== LOGO VERROU : POLICE ORBITRON (Cybersécurité) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&display=swap');
+
+.brand-text {
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 1.35rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.22em !important;
+  background: linear-gradient(90deg, #00E676 0%, #FFFFFF 55%, #00E676 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.brand-tagline {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 0.58rem !important;
+  letter-spacing: 0.28em !important;
+  color: rgba(0, 230, 118, 0.55) !important;
+  text-transform: uppercase !important;
+  font-weight: 500 !important;
 }
