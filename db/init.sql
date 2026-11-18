@@ -17,12 +17,18 @@ CREATE TABLE IF NOT EXISTS cle_identite (
     empreinte VARCHAR(64) UNIQUE NOT NULL,
     cle_pub_chiffrement BYTEA NOT NULL,
     cle_pub_signature BYTEA NOT NULL,
+    cle_pub_revoquation BYTEA,
     statut VARCHAR(15) NOT NULL DEFAULT 'active' CHECK (statut IN ('active', 'revoquee')),
     date_creation TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT chk_taille_cle_chiffrement CHECK (octet_length(cle_pub_chiffrement) = 32),
-    CONSTRAINT chk_taille_cle_signature CHECK (octet_length(cle_pub_signature) = 32)
+    CONSTRAINT chk_taille_cle_signature CHECK (octet_length(cle_pub_signature) = 32),
+    CONSTRAINT chk_taille_cle_revoquation CHECK (
+        cle_pub_revoquation IS NULL OR octet_length(cle_pub_revoquation) = 32
+    )
 );
+
+ALTER TABLE cle_identite ADD COLUMN IF NOT EXISTS cle_pub_revoquation BYTEA;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_annuaire_empreinte ON cle_identite (empreinte);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cle_active_unique ON cle_identite (id_utilisateur) WHERE (statut = 'active');

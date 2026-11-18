@@ -6,6 +6,8 @@ export interface ProfilLocal {
   clePriveeChiffrement: Uint8Array;
   clePubSignature: Uint8Array;
   clePriveeSignature: Uint8Array;
+  clePubRevoquation: Uint8Array;
+  clePriveeRevoquationSeed: Uint8Array;
   empreinte: string;
   sasCode: string;
 }
@@ -35,6 +37,8 @@ export async function genererIdentite(prenom: string): Promise<ProfilLocal> {
   const sodium = await getSodium();
   const paireBox = sodium.crypto_box_keypair();
   const paireSign = sodium.crypto_sign_keypair();
+  const clePriveeRevoquationSeed = sodium.randombytes_buf(sodium.crypto_sign_SEEDBYTES);
+  const paireRevoquation = sodium.crypto_sign_seed_keypair(clePriveeRevoquationSeed);
   const { empreinte, sasCode } = calculerEmpreinteEtSas(paireBox.publicKey, paireSign.publicKey, sodium);
 
   return {
@@ -43,9 +47,16 @@ export async function genererIdentite(prenom: string): Promise<ProfilLocal> {
     clePriveeChiffrement: paireBox.privateKey,
     clePubSignature: paireSign.publicKey,
     clePriveeSignature: paireSign.privateKey,
+    clePubRevoquation: paireRevoquation.publicKey,
+    clePriveeRevoquationSeed,
     empreinte,
     sasCode
   };
+}
+
+export async function creerCodeRecuperation(profil: ProfilLocal): Promise<string> {
+  const sodium = await getSodium();
+  return `VLK-RECOVERY-V1:${profil.empreinte}:${sodium.to_hex(profil.clePriveeRevoquationSeed)}`;
 }
 
 export async function creerCarteContact(profil: ProfilLocal): Promise<string> {

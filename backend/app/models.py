@@ -26,6 +26,7 @@ class CleIdentite(Base):
     empreinte = Column(String(64), unique=True, nullable=False)
     cle_pub_chiffrement = Column(LargeBinary(32), nullable=False)
     cle_pub_signature = Column(LargeBinary(32), nullable=False)
+    cle_pub_revoquation = Column(LargeBinary(32), nullable=True)
     statut = Column(String(15), nullable=False, default="active")
     date_creation = Column(DateTime(timezone=True), default=datetime.utcnow)
 

@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: verrou_db
       POSTGRES_USER: verrou_user
-      POSTGRES_PASSWORD: verrou_secret_pass_2026
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a URL-safe POSTGRES_PASSWORD in .env}
     ports:
       - "5432:5432"
     volumes:
@@ -19,6 +19,20 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: verrou_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://verrou_user:${POSTGRES_PASSWORD:?Set a URL-safe POSTGRES_PASSWORD in .env}@postgres:5432/verrou_db
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   pgdata:
