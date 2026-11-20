@@ -2,10 +2,7 @@ import os
 import unittest
 from types import SimpleNamespace
 
-os.environ.setdefault(
-    "DATABASE_URL",
-    "postgresql+asyncpg://test:test@localhost/test"
-)
+os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
 
 from fastapi import HTTPException
 from nacl.signing import SigningKey
@@ -41,15 +38,13 @@ class RecoveryRegistryTests(unittest.IsolatedAsyncioTestCase):
         identity = SimpleNamespace(
             empreinte=empreinte,
             cle_pub_revoquation=bytes(key.verify_key),
-            statut="active"
+            statut="active",
         )
         database = FakeDatabase(identity)
         signature = key.sign(f"VERROU-REVOKE-V1\n{empreinte}".encode()).signature.hex()
 
         result = await revoquer_identite(
-            empreinte,
-            RevoquerIdentiteRequest(signature_hex=signature),
-            database
+            empreinte, RevoquerIdentiteRequest(signature_hex=signature), database
         )
 
         self.assertEqual(result["statut"], "revoquee")
@@ -63,16 +58,16 @@ class RecoveryRegistryTests(unittest.IsolatedAsyncioTestCase):
         identity = SimpleNamespace(
             empreinte=empreinte,
             cle_pub_revoquation=bytes(recovery_key.verify_key),
-            statut="active"
+            statut="active",
         )
         database = FakeDatabase(identity)
-        signature = other_key.sign(f"VERROU-REVOKE-V1\n{empreinte}".encode()).signature.hex()
+        signature = other_key.sign(
+            f"VERROU-REVOKE-V1\n{empreinte}".encode()
+        ).signature.hex()
 
         with self.assertRaises(HTTPException) as error:
             await revoquer_identite(
-                empreinte,
-                RevoquerIdentiteRequest(signature_hex=signature),
-                database
+                empreinte, RevoquerIdentiteRequest(signature_hex=signature), database
             )
 
         self.assertEqual(error.exception.status_code, 403)

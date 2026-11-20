@@ -7,8 +7,11 @@ Nous nous engageons a vous repondre dans les plus brefs delais.
 
 ## Modele de Menace
 - **Serveur honnete mais curieux** : Le serveur ne detient aucune cle privee ni phrase secrete.
+
 - **Serveur malveillant** : Les signatures Ed25519 empechent la falsification des cles publiques.
+
 - **Attaques XSS** : Le frontend est protege par une CSP stricte. La securite des cles privees repose sur la machine de l'utilisateur.
+
 - **Perte d'appareil** : Le systeme de recuperation zero-knowledge permet de restaurer l'acces.
 
 ## Statut Actuel

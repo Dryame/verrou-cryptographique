@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Request
-from app.security_middleware import limiter
+
 from app.schemas import ProfilCreate
+from app.security_middleware import limiter
 
 router = APIRouter()
+
 
 @router.post("/profils")
 @limiter.limit("5/minute")

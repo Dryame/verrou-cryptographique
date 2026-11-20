@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { 
   Shield, Lock, Unlock, Users, Archive, Send, Copy,
   UploadCloud, Share2, UserPlus, ChevronRight, Download,
-  ShieldCheck, Zap, ServerOff, LogOut, User, ArrowRight,
+  ShieldCheck, Zap, LogOut, User, ArrowRight,
   Eye, EyeOff, Trash2, X, ChevronDown, Mail, Menu
 } from 'lucide-react';
 import {
@@ -745,8 +745,8 @@ export default function App() {
         <div className="brand-section">
           <div className="brand-icon"><Shield className="w-6 h-6 text-[#25A86A]" /></div>
           <div className="brand-label">
-            <span className="brand-text">VERROU</span>
-            <span className="brand-tagline">Zero · Knowledge</span>
+            <span className="brand-text">Fasolock</span>
+            {/* <span className="brand-tagline">Zero · Knowledge</span> */}
           </div>
         </div>
         <div className="company-badge-nav">
@@ -824,7 +824,7 @@ export default function App() {
             />
             <input
               type="password"
-              placeholder="Phrase secrète (ex : paix liberté progrès)"
+              placeholder="Phrase secrète"
               value={loginPass}
               onChange={e => setLoginPass(e.target.value)}
               className="cyber-input"
@@ -840,7 +840,7 @@ export default function App() {
           {recoveryNotice && <p className="recovery-notice" role="status">{recoveryNotice}</p>}
           <div style={{display:'flex',gap:20,fontSize:'0.78rem',color:'#64748B',flexWrap:'wrap',justifyContent:'center'}}>
             <span><ShieldCheck className="w-3.5 h-3.5 inline text-[#25A86A] mr-1"/>Sécurité maximale</span>
-            <span><ServerOff  className="w-3.5 h-3.5 inline text-[#F2C94C] mr-1"/>Zero-knowledge</span>
+            {/* <span><ServerOff  className="w-3.5 h-3.5 inline text-[#F2C94C] mr-1"/>Zero-knowledge</span> */}
             <span><Zap        className="w-3.5 h-3.5 inline text-[#25A86A] mr-1"/>Accès rapide</span>
           </div>
         </div>
@@ -862,8 +862,8 @@ export default function App() {
         <div className="brand-section">
           <div className="brand-icon"><Shield className="w-6 h-6 text-[#25A86A]" /></div>
           <div className="brand-label">
-            <span className="brand-text">VERROU</span>
-            <span className="brand-tagline">ZERO CONNAISSANCE</span>
+            <span className="brand-text">Fasolock</span>
+            {/* <span className="brand-tagline">ZERO CONNAISSANCE</span> */}
           </div>
         </div>
 
@@ -963,11 +963,11 @@ export default function App() {
           <div className="split-layout-grid">
             <div className="hero-info-col">
               <h1>Vos messages,<br/>votre <span>confidentialité</span></h1>
-              <div className="feature-pill-list">
+              {/* <div className="feature-pill-list">
                 <div className="feature-pill-item"><ShieldCheck className="w-4 h-4 text-[#25A86A]"/>Clé publique du contact</div>
                 <div className="feature-pill-item"><Zap         className="w-4 h-4 text-[#F2C94C]"/>Signature vérifiable</div>
                 <div className="feature-pill-item"><ServerOff   className="w-4 h-4 text-[#25A86A]"/>Clés privées locales</div>
-              </div>
+              </div> */}
             </div>
 
             <div className="cyber-card">
@@ -975,7 +975,7 @@ export default function App() {
                 <div className="header-icon-box"><Lock className="w-6 h-6"/></div>
                 <div>
                   <h2 style={{fontSize:'1.3rem',fontWeight:800}}>Chiffrer un message</h2>
-                  <p style={{fontSize:'0.8rem',color:'#94A3B8'}}>AES-256-GCM · clé protégée pour le contact</p>
+                  <p style={{fontSize:'0.8rem',color:'#94A3B8'}}></p>
                 </div>
               </div>
 
@@ -988,7 +988,7 @@ export default function App() {
               </div>
 
               <div className="input-block">
-                <div className="input-label-row">Ajouter un document (optionnel)</div>
+                <div className="input-label-row">Document joint (fichier texte ou image)</div>
                 <label className="file-drop-zone">
                   <UploadCloud className="w-7 h-7 text-[#25A86A]"/>
                   <span style={{fontSize:'0.86rem',fontWeight:700}}>{attachedFile?`${attachedFile.name} (${(attachedFile.size/1024).toFixed(0)} Ko)`:"Glissez ou cliquez pour parcourir"}</span>
@@ -1016,7 +1016,7 @@ export default function App() {
               </div>
 
               <div className="input-block">
-                <div className="input-label-row">Destinataire</div>
+                <div className="input-label-row">Choisissez votre destinataire</div>
                 <select value={selectedRecipient} onChange={e=>{setSelectedRecipient(e.target.value);clearCipherResult();}} className="cyber-select">
                   <option value="">Sélectionnez un contact</option>
                   {contacts.map(c=><option key={c.id} value={c.id}>{c.name} (SAS: {c.sasCode})</option>)}
@@ -1024,7 +1024,7 @@ export default function App() {
               </div>
 
               <button onClick={handleEncrypt} className="btn-primary-neon">
-                <Lock className="w-5 h-5"/> Chiffrer mon message
+                <Lock className="w-5 h-5"/> Cliquez ici pour chiffrer
               </button>
 
               {cipherOutput && (
@@ -1077,14 +1077,14 @@ export default function App() {
         {activeTab === 'dechiffrer' && (
           <div className="split-layout-grid">
             <div className="hero-info-col">
-              <h1>Déchiffrement<br/><span>Instantané</span></h1>
+              <h1>Déchiffrement<br/><span>Instantanement en toute sécurité</span></h1>
             </div>
             <div className="cyber-card" style={{textAlign:'center',alignItems:'center'}}>
               <div className="header-icon-box decrypt-header-icon">
                 <Unlock className="w-10 h-10"/>
               </div>
               <div>
-                <h2 className="decrypt-card-title">Message reçu sur WhatsApp ?</h2>
+                <h2 className="decrypt-card-title">Processus de déchiffrement du chiffré reçu</h2>
                 <p className="workspace-card-description" style={{fontSize:'0.9rem',maxWidth:380}}>Importez le fichier .vlk reçu ou collez le contenu chiffré complet, puis choisissez son expéditeur.</p>
               </div>
               <label
@@ -1129,7 +1129,7 @@ export default function App() {
                 </select>
               </div>
               <button onClick={handleDecrypt} className="btn-primary-neon" style={{maxWidth:420}}>
-                <Unlock className="w-5 h-5"/> CLIQUER POUR DÉCHIFFRER
+                <Unlock className="w-5 h-5"/> Cliquez ici pour dechiffrer
               </button>
               <button onClick={handlePasteClipboard} className="secondary-action-button">
                 <Copy className="w-4 h-4"/> Coller depuis le presse-papiers
@@ -1143,7 +1143,7 @@ export default function App() {
                     <div className="decrypted-file-actions">
                       {previewKind && (
                         <button type="button" className="secondary-action-button" onClick={() => setShowDecryptedPreview(true)}>
-                          <Eye className="w-4 h-4" /> Voir le contenu
+                          <Eye className="w-4 h-4" /> Cliquez pour voir le contenu
                         </button>
                       )}
                       <a className="secondary-action-button" href={decryptedFile.url} download={decryptedFile.name}>
@@ -1172,7 +1172,7 @@ export default function App() {
         {activeTab === 'contacts' && (
           <div className="split-layout-grid">
             <div className="hero-info-col">
-              <h1>Gérez vos <span>contacts</span></h1>
+              <h1>Gérez en toute serenité vos <span>contacts</span></h1>
             </div>
             <div className="cyber-card contact-workspace-card" style={{gap:14}}>
               {/* Ma clé publique */}
@@ -1184,7 +1184,7 @@ export default function App() {
                 <textarea readOnly value={publicCard} aria-label="Ma carte contact VERROU" className="cyber-textarea mono contact-card-output" rows={3}/>
                 {profil && <p className="fingerprint-line">Empreinte : {profil.empreinte}</p>}
                 <button type="button" className="recovery-show-button" onClick={handleShowRecoveryCode}>
-                  <ShieldCheck className="w-4 h-4" /> Afficher mon code de récupération
+                  <ShieldCheck className="w-4 h-4" /> Mon code de récupération
                 </button>
                 <div className="share-actions">
                   <button onClick={()=>copyToClipboard(publicCard)} className="share-action-button"><Copy className="w-4 h-4"/>Copier</button>
@@ -1202,7 +1202,7 @@ export default function App() {
               <div className="contact-content-surface contact-add-trigger" onClick={()=>setShowAddContact(!showAddContact)}>
                 <div style={{display:'flex',alignItems:'center',gap:12}}>
                   <div className="contact-section-icon"><UserPlus className="w-5 h-5"/></div>
-                  <div><h3 style={{fontSize:'0.98rem',fontWeight:800}}>Ajouter un contact</h3><p className="contact-section-description">Coller la clé reçue</p></div>
+                  <div><h3 style={{fontSize:'0.98rem',fontWeight:800}}>Ajouter un contact</h3><p className="contact-section-description">Coller la clé public reçue pour enregistrer votre contact</p></div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-500"/>
               </div>
@@ -1247,7 +1247,7 @@ export default function App() {
                 <div style={{padding:9,borderRadius:11,background:'rgba(37,168,106,0.1)',color:'#25A86A'}}><Archive className="w-5 h-5"/></div>
                 <div>
                   <h2 style={{fontSize:'1.2rem',fontWeight:800}}>Mes copies chiffrées</h2>
-                  <p className="workspace-card-description" style={{fontSize:'0.78rem'}}>Seuls les cryptogrammes VERROU sont conservés localement.</p>
+                  <p className="workspace-card-description" style={{fontSize:'0.78rem'}}>Seuls les cryptogrammes sont conservés localement.</p>
                 </div>
               </div>
               {vaultNotice && <p className="vault-notice" role="status">{vaultNotice}</p>}

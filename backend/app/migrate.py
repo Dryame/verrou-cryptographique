@@ -5,11 +5,14 @@ from app.database import engine
 
 async def main() -> None:
     async with engine.begin() as connection:
-        await connection.execute(text(
-            "ALTER TABLE cle_identite "
-            "ADD COLUMN IF NOT EXISTS cle_pub_revoquation BYTEA"
-        ))
-        await connection.execute(text("""
+        await connection.execute(
+            text(
+                "ALTER TABLE cle_identite "
+                "ADD COLUMN IF NOT EXISTS cle_pub_revoquation BYTEA"
+            )
+        )
+        await connection.execute(
+            text("""
             DO $$
             BEGIN
                 IF NOT EXISTS (
@@ -27,7 +30,8 @@ async def main() -> None:
                 END IF;
             END
             $$
-        """))
+        """)
+        )
     await engine.dispose()
 
 

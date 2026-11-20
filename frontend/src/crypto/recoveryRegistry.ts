@@ -31,7 +31,7 @@ async function messageErreur(response: Response, fallback: string): Promise<stri
     if (body && typeof body === 'object' && 'detail' in body && typeof body.detail === 'string') {
       return body.detail;
     }
-  } catch (e) {
+  } catch {
     // Si le serveur renvoie du HTML ou du texte brut, on ignore
   }
   return fallback;
@@ -78,7 +78,7 @@ export async function verifierIdentiteActive(contact: ContactKeys): Promise<void
 try {
   const text = await response.text();
   registryContact = JSON.parse(text);
-} catch (e) {
+} catch {
   throw new Error("La réponse du serveur est invalide (format non JSON).");
 }
   const sodium = await getSodium();
