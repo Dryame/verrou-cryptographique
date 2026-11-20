@@ -21,3 +21,16 @@ frontend/.env
 *.bak
 deploy_security.sh
 03_secure_env.sh
+
+# Environnements virtuels
+venv/
+.venv/
+
+# Builds
+build/
+dist/
+
+# Fichiers de diagnostic et backups
+diagnostic/
+.backup_fix/
+.env.bak
