@@ -240,11 +240,11 @@ function HomePage({
         <div className="brand-section">
           <div className="brand-icon"><Shield className="w-6 h-6 text-[#25A86A]" /></div>
           <div className="brand-label">
-            <span className="brand-text">VERROU</span>
-            <span className="brand-tagline">Zero · Knowledge</span>
+            <span className="brand-text">Fasolock</span>
+            {/* <span className="brand-tagline">Z</span> */}
           </div>
         </div>
-        <a className="landing-nav-link" href="#souverainete">Découvrir</a>
+        {/* <a className="landing-nav-link" href="#souverainete">Découvrir</a> */}
         <button type="button" onClick={onOpenLogin} className="landing-nav-cta">
           Accéder à mon espace <ArrowRight className="w-4 h-4" />
         </button>
@@ -261,15 +261,15 @@ function HomePage({
               <button type="button" onClick={onOpenLogin} className="btn-primary-neon">
                 <Lock className="w-5 h-5" /> Accéder à mon espace sécurisé
               </button>
-              <a href="#souverainete" className="landing-secondary-link">
+              {/* <a href="#souverainete" className="landing-secondary-link">
                 Découvrir la solution <ChevronRight className="w-4 h-4" />
-              </a>
+              </a> */}
             </div>
-            <div className="landing-trust-list">
+            {/* <div className="landing-trust-list">
               <span><ShieldCheck className="w-4 h-4" /> AES-256-GCM</span>
               <span><ServerOff className="w-4 h-4" /> Clés privées locales</span>
               <span><Zap className="w-4 h-4" /> Signature vérifiable</span>
-            </div>
+            </div> */}
           </div>
 
           <div className="landing-visual-card" role="img" aria-label="Illustration du chiffrement VERROU">
@@ -279,10 +279,9 @@ function HomePage({
         <section id="fonctionnalites" className="landing-section">
           <div id="souverainete" className="landing-section-heading">
             <span className="landing-eyebrow">Une approche concrète</span>
-            <h2>La souveraineté numérique,<br /><span>à portée de main.</span></h2>
+            <h2>Le verrou numérique des Burkinabè<br /><span>Envoyez en toute confidentialité, simplement.</span></h2>
             <p>
-              Au Burkina Faso comme ailleurs, la confiance numérique passe par la capacité
-              à protéger ses échanges et à garder la maîtrise de ses accès.
+              Ajoutez un contact, chiffrez votre contenu, envoyez-le. Seul votre destinataire pourra l’ouvrir.
             </p>
           </div>
           <div className="landing-feature-grid">
@@ -310,26 +309,26 @@ function HomePage({
             <h2>Reprenez le contrôle<br />de vos échanges.</h2>
           </div>
           <ol id="guide" className="landing-steps">
-            <li><span>01</span><div><strong>Déverrouillez votre espace</strong><p>Votre identité est protégée sur votre appareil.</p></div></li>
+            <li><span>01</span><div><strong>Créer votre profil pour déverrouillez votre espace d'échange sécurisé</strong><p>Votre identité est protégée sur votre appareil.</p></div></li>
             <li><span>02</span><div><strong>Ajoutez un contact vérifié</strong><p>Échangez vos cartes publiques et confirmez les empreintes.</p></div></li>
-            <li><span>03</span><div><strong>Chiffrez, puis partagez</strong><p>Envoyez le contenu chiffré par le canal de votre choix.</p></div></li>
+            <li><span>03</span><div><strong>Chiffrez vos messages et fichiers confidentiels, puis partagez avec vos proches</strong><p>Envoyez le contenu chiffré par le canal de votre choix.</p></div></li>
           </ol>
         </section>
 
         <section id="faq" className="landing-faq">
-          <span className="landing-eyebrow">Questions fréquentes</span>
+          <span className="landing-eyebrow"> A savoir</span>
           <h2>À propos de VERROU</h2>
           <details>
-            <summary>À quoi sert une clé publique ?</summary>
-            <p>Elle permet à vos contacts de vous envoyer un contenu chiffré sans partager votre clé privée.</p>
+            <summary>À quoi sert votre clé publique ?</summary>
+            <p>Votre clé publique permet à vos contacts de chiffrer un contenu à votre intention. Elle peut être partagée librement : seule votre clé privée, qui ne quitte jamais votre appareil, permet de le déchiffrer.</p>
           </details>
           <details>
             <summary>Où sont conservées mes clés privées ?</summary>
-            <p>Votre identité cryptographique reste sur votre appareil et est protégée par votre phrase secrète.</p>
+            <p>Vos clés privées sont stockées uniquement sur votre appareil, dans le navigateur, sous forme chiffrée. Elles sont protégées par une clé dérivée de votre phrase secrète et ne sont jamais envoyées à un serveur. Seule la clé publique est enregistrée dans l’annuaire.</p>
           </details>
           <details>
             <summary>Pourquoi parler de souveraineté numérique ?</summary>
-            <p>Parce que protéger ses échanges et garder la maîtrise de ses accès renforce l’autonomie numérique.</p>
+            <p>Avec VERROU, le chiffrement et le déchiffrement s’effectuent sur votre appareil, et vos clés restent sous votre seul contrôle. Vous décidez qui peut vous écrire et qui peut lire vos contenus, sans dépendre d’un tiers pour garder vos clés.</p>
           </details>
         </section>
       </main>

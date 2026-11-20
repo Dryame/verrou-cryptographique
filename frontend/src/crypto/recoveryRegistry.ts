@@ -1,8 +1,7 @@
 import { getSodium } from './sodium';
 import type { ProfilLocal } from './cryptoService';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? 'http://localhost:8000' : '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/';
 
 interface ContactKeys {
   empreinte: string;
@@ -26,9 +25,14 @@ function apiUrl(path: string): string {
 }
 
 async function messageErreur(response: Response, fallback: string): Promise<string> {
-  const body: unknown = await response.json();
-  if (body && typeof body === 'object' && 'detail' in body && typeof body.detail === 'string') {
-    return body.detail;
+  try {
+    const text = await response.text();
+    const body = JSON.parse(text);
+    if (body && typeof body === 'object' && 'detail' in body && typeof body.detail === 'string') {
+      return body.detail;
+    }
+  } catch (e) {
+    // Si le serveur renvoie du HTML ou du texte brut, on ignore
   }
   return fallback;
 }
@@ -70,7 +74,13 @@ export async function verifierIdentiteActive(contact: ContactKeys): Promise<void
     }
     throw new Error(await messageErreur(response, 'Impossible de vérifier le statut de cette identité.'));
   }
-  const registryContact: unknown = await response.json();
+  let registryContact: any;
+try {
+  const text = await response.text();
+  registryContact = JSON.parse(text);
+} catch (e) {
+  throw new Error("La réponse du serveur est invalide (format non JSON).");
+}
   const sodium = await getSodium();
   if (
     !registryContact ||

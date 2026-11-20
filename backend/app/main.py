@@ -46,9 +46,11 @@ async def creer_profil(payload: ProfilCreate, db: AsyncSession = Depends(get_db)
     except BadSignatureError:
         raise HTTPException(status_code=401, detail="La preuve de possession de la cle de signature est invalide.")
 
-    # --- 2. Verification en Base de Donnees ---
+        # --- 2. Verification en Base de Donnees ---
     resultat_existant = await db.execute(
-        select(CleIdentite).where(CleIdentite.empreinte == empreinte)
+        select(CleIdentite)
+        .options(selectinload(CleIdentite.utilisateur))
+        .where(CleIdentite.empreinte == empreinte)
     )
     cle_existante = resultat_existant.scalar_one_or_none()
     
@@ -58,7 +60,14 @@ async def creer_profil(payload: ProfilCreate, db: AsyncSession = Depends(get_db)
             raise HTTPException(status_code=409, detail="Cette empreinte est deja associee a d'autres cles.")
         
         # Si les cles correspondent, on renvoie le profil existant
-        return ContactResponse(prenom=cle_existante.utilisateur.prenom, empreinte=cle_existante.empreinte)
+                # Si les cles correspondent, on renvoie le profil existant
+        return ContactResponse(
+            prenom=cle_existante.utilisateur.prenom,
+            empreinte=cle_existante.empreinte,
+            cle_pub_chiffrement_hex=cle_existante.cle_pub_chiffrement.hex(),
+            cle_pub_signature_hex=cle_existante.cle_pub_signature.hex(),
+            statut=cle_existante.statut
+        )
 
     # --- 3. Insertion en Base de Donnees ---
     # Creation de l'utilisateur
