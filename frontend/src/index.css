@@ -835,17 +835,16 @@ body, p, span, label, input, select, textarea, li {
 
 /* ARRIRE PLAN PAGE DE CONNEXION */
 
-.creation-profil-container {
-  background-image: url('/images/connexion.png');
+.login-page {
+    background-image: url('/images/connexion.png') !important;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  background-attachment: fixed;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
 }
+
 
 /* ===== LOGO VERROU : POLICE ORBITRON (Cybersécurité) ===== */
 .brand-text {
@@ -853,7 +852,6 @@ body, p, span, label, input, select, textarea, li {
   font-size: 1.35rem !important;
   font-weight: 900 !important;
   letter-spacing: 0.22em !important;
-  background: linear-gradient(90deg, var(--green-neon) 0%, #FFFFFF 54%, var(--yellow-gold) 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
@@ -943,7 +941,7 @@ body, p, span, label, input, select, textarea, li {
 .landing-hero-copy > p,
 .landing-section-heading > p {
   max-width: 610px;
-  color: var(--text-gray);
+  color: black;
   font-size: 1.05rem;
   line-height: 1.75;
 }
@@ -1130,7 +1128,7 @@ body, p, span, label, input, select, textarea, li {
   padding: 18px;
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  background: rgba(11, 20, 36, 0.55);
+  background: rgba(10, 88, 223, 0.55);
 }
 
 .landing-steps li > span {

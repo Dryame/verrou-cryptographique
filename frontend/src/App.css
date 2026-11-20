@@ -182,3 +182,14 @@
     border-right-color: var(--border);
   }
 }
+
+.login-page {
+  background-image: url('/images/connexion.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  min-height: 100vh;
+  width: 100%;
+}
+

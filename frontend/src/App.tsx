@@ -71,15 +71,13 @@ function AppFooter() {
             <Lock className="footer-reference-lock" />
           </span>
           <span className="footer-reference-brand-copy">
-            <strong>VERROU</strong>
+            <strong>Fasolock</strong>
             <small>Innover · Protéger · Bâtir</small>
           </span>
         </a>
 
         <nav className="footer-reference-links" aria-label="Liens rapides">
           <h2>Liens rapides</h2>
-          <a href="#accueil">Accueil</a>
-          <a href="#hackathons">Hackathons</a>
           <a href="#apropos">À propos</a>
           <a href="#faq">FAQ</a>
         </nav>
@@ -120,10 +118,10 @@ function AppFooter() {
       </div>
 
       <div className="footer-reference-bottom">
-        <p>© 2026 VERROU. Tous droits réservés. <span>Burkina Faso</span></p>
+        <p>© 2026 Fasolock. Tous droits réservés. <span>Burkina Faso</span></p>
         <p className="footer-reference-organization">AWZOULAB <span>: INCUBATEUR ET LEARNING CENTER</span></p>
         <p className="footer-reference-credit">
-          Concepteur <strong>YAMEOGO Idrissa</strong>
+          Concepteurs <strong>Y Idrissa & D Mansour</strong>
           <a href="mailto:yamidrissa@epo.gov.bf"><Mail aria-hidden="true" /> yamidrissa@epo.gov.bf</a>
         </p>
       </div>
@@ -238,18 +236,26 @@ function HomePage({
     <div className="verrou-app landing-page">
       <header className="pro-navbar landing-navbar">
         <div className="brand-section">
-          <div className="brand-icon"><Shield className="w-6 h-6 text-[#25A86A]" /></div>
-          <div className="brand-label">
-            <span className="brand-text">Fasolock</span>
-            {/* <span className="brand-tagline">Z</span> */}
-          </div>
+            <div className="brand-icon">
+                <Shield className="w-6 h-6 text-[#25A86A]" />
+            </div>
+            <div className="brand-label">
+                <span className="brand-text">Fasolock</span>
+            </div>
         </div>
-        {/* <a className="landing-nav-link" href="#souverainete">Découvrir</a> */}
-        <button type="button" onClick={onOpenLogin} className="landing-nav-cta">
-          Accéder à mon espace <ArrowRight className="w-4 h-4" />
-        </button>
-        <button type="button" onClick={onOpenRecovery} className="landing-recovery-link">
-          Clé perdue ?
+
+        <div className="company-badge-nav">
+            <span style={{width:8,height:8,borderRadius:'50%',background:'#1a07c0',display:'inline-block'}}></span>
+            <span>Non connecté</span>
+        </div>
+
+        {/* Le bouton ici doit être adapté pour la page d'accueil */}
+        <button 
+            type="button" 
+            onClick={onOpenLogin} // Cette prop vient de votre composant HomePage
+            className="login-home-link"
+      >
+          Se connecter
         </button>
       </header>
 
@@ -750,7 +756,7 @@ export default function App() {
           </div>
         </div>
         <div className="company-badge-nav">
-          <span style={{width:8,height:8,borderRadius:'50%',background:'#64748B',display:'inline-block'}}></span>
+          <span style={{width:8,height:8,borderRadius:'50%',background:'#1a07c0',display:'inline-block'}}></span>
           <span>Non connecté</span>
         </div>
         <button type="button" onClick={() => {
@@ -801,7 +807,7 @@ export default function App() {
             </button>
           </div>
         ) : (
-        <div className="cyber-card" style={{maxWidth:480,margin:'0 auto',textAlign:'center',alignItems:'center',padding:'40px 32px'}}>
+        <div className="cyber-card" style={{maxWidth:480,margin:'0 auto',textAlign:'center', backgroundColor: '#7c7777', alignItems:'center',padding:'40px 32px'}}>
           <div className="header-icon-box" style={{width:72,height:72,borderRadius:20}}>
             <Lock className="w-8 h-8" />
           </div>
@@ -809,7 +815,7 @@ export default function App() {
             <h1 style={{fontSize:'1.85rem',fontWeight:900,marginBottom:6}}>
               Accès <span style={{color:'#25A86A'}}>Sécurisé</span>
             </h1>
-            <p style={{color:'#94A3B8',fontSize:'0.9rem'}}>
+            <p style={{color:'#132036',fontSize:'0.9rem'}}>
               Identifiez-vous pour déverrouiller votre espace cryptographique personnel.
             </p>
           </div>
@@ -831,14 +837,14 @@ export default function App() {
             />
             {loginError && <p style={{color:'#F87171',fontSize:'0.82rem'}}>{loginError}</p>}
             <button type="submit" className="btn-primary-neon">
-              <Unlock className="w-5 h-5" /> Déverrouiller le Coffre
+              <Unlock className="w-5 h-5" /> Déverrouiller votre espace
             </button>
             <button type="button" className="login-recovery-button" onClick={openRecoverySpace}>
               J’ai perdu mon nom ou ma phrase secrète
             </button>
           </form>
           {recoveryNotice && <p className="recovery-notice" role="status">{recoveryNotice}</p>}
-          <div style={{display:'flex',gap:20,fontSize:'0.78rem',color:'#64748B',flexWrap:'wrap',justifyContent:'center'}}>
+          <div style={{display:'flex',gap:20,fontSize:'0.78rem',color:'#020913',flexWrap:'wrap',justifyContent:'center'}}>
             <span><ShieldCheck className="w-3.5 h-3.5 inline text-[#25A86A] mr-1"/>Sécurité maximale</span>
             {/* <span><ServerOff  className="w-3.5 h-3.5 inline text-[#F2C94C] mr-1"/>Zero-knowledge</span> */}
             <span><Zap        className="w-3.5 h-3.5 inline text-[#25A86A] mr-1"/>Accès rapide</span>
