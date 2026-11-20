@@ -1,0 +1,14 @@
+
+============================================================
+ SYNTHÈSE — Verrou Cryptographique
+============================================================
+ ❌ Alertes   : 0
+ ⚠️  Warnings  : 10
+ ✅ Conformes  : 21
+
+ Top 3 alertes :
+   (aucune)
+
+ Rapport  : /home/idrissa_yameogo/verrou/diagnostic/rapport-20261120-082803.md
+ Synthèse : /home/idrissa_yameogo/verrou/diagnostic/synthese-20261120-082803.txt
+============================================================

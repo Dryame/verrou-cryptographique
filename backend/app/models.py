@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+import datetime
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base, relationship
@@ -14,7 +14,7 @@ class Utilisateur(Base):
     sel_derivation = Column(LargeBinary, nullable=False)
     argon2_memoire = Column(Integer, nullable=False, default=65536)
     argon2_iterations = Column(Integer, nullable=False, default=3)
-    date_creation = Column(DateTime(timezone=True), default=datetime.utcnow)
+    date_creation = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
 
     cles = relationship("CleIdentite", back_populates="utilisateur", cascade="all, delete-orphan")
 
@@ -26,8 +26,8 @@ class CleIdentite(Base):
     empreinte = Column(String(64), unique=True, nullable=False)
     cle_pub_chiffrement = Column(LargeBinary(32), nullable=False)
     cle_pub_signature = Column(LargeBinary(32), nullable=False)
-    cle_pub_revoquation = Column(LargeBinary(32), nullable=True)
+    cle_pub_revocation = Column(LargeBinary(32), nullable=True)
     statut = Column(String(15), nullable=False, default="active")
-    date_creation = Column(DateTime(timezone=True), default=datetime.utcnow)
+    date_creation = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
 
     utilisateur = relationship("Utilisateur", back_populates="cles")

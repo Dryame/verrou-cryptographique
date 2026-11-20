@@ -16,3 +16,8 @@ pgdata/
 .DS_Store
 Thumbs.db
 *:Zone.Identifier
+backend/.env
+frontend/.env
+*.bak
+deploy_security.sh
+03_secure_env.sh
