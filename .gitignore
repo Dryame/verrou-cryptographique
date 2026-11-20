@@ -34,3 +34,4 @@ dist/
 diagnostic/
 .backup_fix/
 .env.bak
+*.sh
