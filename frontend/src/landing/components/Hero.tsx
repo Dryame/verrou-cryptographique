@@ -1,4 +1,4 @@
-import { ArrowRight, Fingerprint, Lock, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Fingerprint, ShieldCheck } from 'lucide-react';
 import { HERO } from '../content';
 
 function HeroWave() {
@@ -18,7 +18,6 @@ export function Hero() {
       <div className="fl-hero-tint" aria-hidden="true" />
       <div className="fl-float f1" aria-hidden="true"><ShieldCheck size={40} /></div>
       <div className="fl-float f2" aria-hidden="true"><Fingerprint size={40} /></div>
-      <div className="fl-float f3" aria-hidden="true"><Lock size={38} /></div>
 
       <div className="fl-hero-inner">
         <div className="fl-hero-copy">

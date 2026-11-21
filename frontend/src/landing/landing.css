@@ -115,13 +115,11 @@ html { scroll-behavior: smooth; }
 }
 .fl-float.f1 { right: 30%; top: 26%; }
 .fl-float.f2 { right: 40%; top: 50%; width: 70px; height: 70px; }
-.fl-float.f3 { right: 7%; top: 28%; color: #fff; background: rgba(37, 168, 106, .35); }
 .fl-wave { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 110px; display: block; }
 
 /* ---------- 5. Titres de section ---------- */
-.fl-eyebrow { display: flex; align-items: center; justify-content: center; gap: 18px; font-size: 14px; font-weight: 600; letter-spacing: .06em !important; text-transform: uppercase; color: var(--fl-gold-dark); }
-.fl-eyebrow::before, .fl-eyebrow::after { content: ''; width: 90px; height: 2px; background: var(--fl-gold); }
 .fl-h2 { margin: 6px 0 0; text-align: center; font-weight: 700; font-size: clamp(1.5rem, 2.6vw, 2rem); line-height: 1.25; color: var(--fl-ink); }
+.fl-h2::after { content: ''; display: block; width: 56px; height: 4px; margin: 14px auto 0; border-radius: 4px; background: var(--fl-gold); }
 
 /* ---------- 6. À propos ---------- */
 .fl-about { background-image: linear-gradient(180deg, #fff 0%, #F3F7F3 100%); }
@@ -146,25 +144,43 @@ html { scroll-behavior: smooth; }
 
 /* ---------- 7. Bénéfices (cartes) ---------- */
 .fl-atouts { max-width: 1360px; margin: 0 auto; padding: 56px 32px; }
-.fl-cards { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 20px; }
+.fl-cards { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 24px; }
 .fl-card {
-  flex: 1 1 220px; min-width: 0; text-align: center; background: #f3fdfd; border-radius: 10px; padding: 44px 28px 40px; position: relative;
-  border: 1px solid #034b15; box-shadow: 0 12px 30px -16px rgba(10, 42, 26, .28);
+  flex: 1 1 230px; min-width: 0; position: relative; overflow: hidden; text-align: center;
+  background: #fff; border: 1px solid #E1EBE4; border-radius: 18px; padding: 40px 26px 36px;
+  box-shadow: 0 1px 2px rgba(10, 42, 26, .04), 0 18px 36px -24px rgba(10, 42, 26, .35);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.fl-card::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 38%; height: 3px; transform: translateX(-50%); border-radius: 3px; background: var(--fl-green); }
-.fl-card.gold::after { background: var(--fl-gold); }
-.fl-card h3 { margin: 14px 0 8px; font-size: 17px; font-weight: 600; color: var(--fl-ink); }
-.fl-card p { margin: 0; font-size: 14px; color: var(--fl-muted); line-height: 1.55; }
+.fl-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--fl-green); }
+.fl-card.gold::before { background: var(--fl-gold); }
+.fl-card:hover { transform: translateY(-4px); border-color: #BFD6C7; box-shadow: 0 1px 2px rgba(10, 42, 26, .04), 0 26px 44px -24px rgba(10, 42, 26, .42); }
+.fl-card-icon { display: grid; place-items: center; width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: #E6F3EA; }
+.fl-card.gold .fl-card-icon { background: #FDF1D3; }
+.fl-card h3 { margin: 22px 0 10px; font-size: 17.5px; font-weight: 600; line-height: 1.3; color: var(--fl-ink); }
+.fl-card p { margin: 0; font-size: 14.5px; color: var(--fl-muted); line-height: 1.6; }
 
 /* ---------- 8. FAQ ---------- */
-.fl-faq { max-width: 1000px; margin: 0 auto; padding: 32px 32px 48px; }
-.fl-faq-list { margin-top: 26px; display: flex; flex-direction: column; gap: 12px; }
-.fl-faq details { background: #f1f5f4; border-radius: 14px; border: 1px solid #EDF1EE; box-shadow: 0 8px 22px -14px rgba(10, 42, 26, .35); padding: 0; margin: 0; }
-.fl-faq summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 22px; font-size: 15.5px; font-weight: 500; color: var(--fl-ink); }
+.fl-faq { max-width: 960px; margin: 0 auto; padding: 32px 32px 56px; }
+.fl-faq-list { margin-top: 32px; display: flex; flex-direction: column; gap: 14px; }
+.fl-faq details {
+  position: relative; margin: 0; padding: 0; background: #fff; border: 1px solid #E1EBE4; border-radius: 16px;
+  box-shadow: 0 10px 24px -20px rgba(10, 42, 26, .45); transition: border-color .2s ease, box-shadow .2s ease;
+}
+.fl-faq details:hover { border-color: #BFD6C7; }
+.fl-faq details[open] { border-color: var(--fl-green); box-shadow: 0 20px 38px -24px rgba(11, 93, 42, .5); }
+.fl-faq details[open]::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 4px; border-radius: 0 4px 4px 0; background: var(--fl-green); }
+.fl-faq summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px 22px; font-size: 16px; font-weight: 600; line-height: 1.4; color: var(--fl-ink); border-radius: 16px;
+}
 .fl-faq summary::-webkit-details-marker { display: none; }
-.fl-faq details[open] .fl-plus { transform: rotate(45deg); }
-.fl-plus { transition: transform .15s; }
-.fl-faq details p { margin: 0; padding: 0 22px 18px; font-size: 14.5px; color: var(--fl-muted); max-width: 820px; }
+.fl-faq summary:focus-visible { outline: 3px solid var(--fl-green); outline-offset: -3px; }
+.fl-plus {
+  width: 32px; height: 32px; padding: 7px; border-radius: 50%; background: #EAF3EC; color: var(--fl-green);
+  transition: transform .2s ease, background .2s ease, color .2s ease;
+}
+.fl-faq details[open] .fl-plus { transform: rotate(45deg); background: var(--fl-green); color: #fff; }
+.fl-faq details p { margin: 0 22px; padding: 16px 0 20px; border-top: 1px solid #EDF1EE; font-size: 14.5px; line-height: 1.65; color: var(--fl-muted); max-width: 820px; }
 
 /* ---------- 9. Responsive ---------- */
 @media (max-width: 1020px) {
@@ -183,7 +199,6 @@ html { scroll-behavior: smooth; }
   .fl-lost { padding: 0 8px; font-size: 12.5px; }
   .fl-hero { padding: 120px 0 120px; }
   .fl-hero-inner, .fl-atouts, .fl-about-in, .fl-faq { padding-left: 18px; padding-right: 18px; }
-  .fl-eyebrow::before, .fl-eyebrow::after { width: 28px; }
 }
 
 /* Grands écrans : réduit l'échelle pour éviter l'effet « trop zoomé » */

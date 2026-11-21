@@ -6,7 +6,6 @@ export function About() {
   return (
     <section id="apropos" className="fl-about">
       <div className="fl-about-in">
-        <div className="fl-eyebrow">{ABOUT.eyebrow}</div>
         <div className="fl-about-grid">
           <div className="fl-about-copy">
             <h2>{ABOUT.title}</h2>

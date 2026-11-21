@@ -15,7 +15,6 @@ export const HERO = {
 
 /* ---------- Section 1 : À propos ---------- */
 export const ABOUT = {
-  eyebrow: 'À propos de FASOLOCK',
   title: 'Le verrou numérique de référence au Burkina Faso.',
   description:
     'Reprenez le contrôle total de vos données sensibles. FASOLOCK déploie une infrastructure cryptographique souveraine pour chiffrer, authentifier et protéger vos échanges critiques contre toute intrusion.',
@@ -44,7 +43,6 @@ export const BENEFITS: Benefit[] = [
 
 /* ---------- Section 3 : FAQ ---------- */
 export const FAQ_HEADER = {
-  eyebrow: 'Questions fréquentes',
   title: 'Tout comprendre sur votre sécurité',
 } as const;
 

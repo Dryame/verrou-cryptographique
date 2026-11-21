@@ -8,7 +8,7 @@ export function Benefits() {
       <div className="fl-cards">
         {BENEFITS.map(({ icon: Icon, color, tone, title, text }) => (
           <article key={title} className={`fl-card ${tone}`}>
-            <Icon size={46} color={color} strokeWidth={1.8} aria-hidden="true" />
+            <span className="fl-card-icon"><Icon size={34} color={color} strokeWidth={1.8} aria-hidden="true" /></span>
             <h3>{title}</h3>
             <p>{text}</p>
           </article>
