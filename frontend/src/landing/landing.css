@@ -1,6 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
-/* Page d'accueil FASOLOCK — styles isolés sous .fl-landing (aucune règle globale) */
+/* ==========================================================================
+   Page d'accueil FASOLOCK — styles isolés sous .fl-landing
+   (le pied de page est rendu hors de ce conteneur et utilise index.css)
+
+   Sommaire
+   1. Variables & base
+   2. Boutons
+   3. En-tête (fixe)
+   4. Héros
+   5. Titres de section
+   6. À propos
+   7. Bénéfices (cartes)
+   8. FAQ
+   9. Responsive
+   ========================================================================== */
+
+/* ---------- 1. Variables & base ---------- */
 .fl-landing {
   --fl-green: #0B5D2A;
   --fl-green-dark: #06301A;
@@ -9,7 +25,8 @@
   --fl-gold-dark: #C98A0B;
   --fl-red: #D4202A;
   --fl-ink: #0A2A1A;
-  --fl-muted: #4B5D52;
+  --fl-muted: #374151;
+  --fl-header-h: 76px;
   --fl-sans: 'Poppins', 'Segoe UI', system-ui, sans-serif;
   display: block;
   width: 100%;
@@ -34,34 +51,39 @@
   outline: 3px solid var(--fl-gold); outline-offset: 3px;
 }
 .fl-landing svg { flex: none; }
+.fl-landing section[id] { scroll-margin-top: calc(var(--fl-header-h) + 8px); }
+html { scroll-behavior: smooth; }
 
-/* ---------- En-tête ---------- */
-.fl-header-wrap { position: absolute; top: 0; left: 0; right: 0; z-index: 10; padding: 0; }
+/* ---------- 2. Boutons ---------- */
+.fl-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 26px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; border: 2px solid transparent; }
+.fl-landing .fl-btn-gold { color: var(--fl-green-deep); background: linear-gradient(180deg, #F8C446, #E8A317); }
+.fl-btn-gold:hover { background: #F8C446; }
+.fl-landing .fl-btn-dark { background: var(--fl-green); color: #fff; }
+.fl-btn-dark:hover { background: var(--fl-green-dark); }
+
+/* ---------- 3. En-tête (fixe) ---------- */
+.fl-header-wrap { position: fixed; top: 0; left: 0; right: 0; z-index: 50; }
 .fl-header {
-  max-width: 100%; width: 100%; margin: 0; box-sizing: border-box; background: #eeeaea; border-radius: 0;
+  width: 100%; min-height: var(--fl-header-h); background: #eeeaea;
   padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px 24px;
   box-shadow: 0 10px 30px 9px rgba(0, 0, 0, .35);
 }
-
-
 .fl-brand { display: inline-flex; align-items: center; gap: 12px; }
 .fl-brand-name { font-weight: 800; font-size: 28px; line-height: 1; color: var(--fl-green-dark); letter-spacing: .01em !important; }
 .fl-brand-name b { color: var(--fl-gold); font-weight: 800; font-family: var(--fl-sans) !important; }
-.fl-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.fl-nav a, .fl-nav button.fl-lost {
-  display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 16px; border-radius: 999px;
-  font-size: 13.5px; font-weight: 500; color: var(--fl-ink); background: none; border: 0; cursor: pointer;
-}
-.fl-nav a:hover, .fl-nav button.fl-lost:hover { background: #EAF3EC; }
-.fl-nav a.fl-active { background: var(--fl-green); color: #fff; font-weight: 600; }
-.fl-nav a.fl-active:hover { background: var(--fl-green-dark); }
+.fl-header-actions { display: flex; align-items: center; gap: 18px; }
 .fl-landing .fl-cta {
   display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 24px; border: 0; cursor: pointer;
   border-radius: 999px; background: var(--fl-green); color: #fff; font-size: 14px; font-weight: 600;
 }
 .fl-cta:hover { background: var(--fl-green-dark); }
+.fl-lost {
+  min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  font-size: 13.5px; font-weight: 500; color: var(--fl-ink);
+}
+.fl-lost:hover { background: #EAF3EC; }
 
-/* ---------- Héros ---------- */
+/* ---------- 4. Héros ---------- */
 .fl-hero {
   position: relative; min-height: 100px; padding: 190px 0 140px; color: #fff; overflow: hidden;
   background: radial-gradient(circle at 78% 40%, #3a7451 0%, #06301A 45%, #031B0D 100%);
@@ -86,14 +108,6 @@
 .fl-hero h1 span { display: block; color: var(--fl-gold); }
 .fl-hero-lead { margin: 22px 0 0; max-width: 480px; font-size: 17px; line-height: 1.6; color: #EAF3EC; }
 .fl-hero-actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 14px; }
-.fl-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 26px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; border: 2px solid transparent; }
-.fl-landing .fl-btn-gold { color: var(--fl-green-deep); background: linear-gradient(180deg, #F8C446, #E8A317); }
-.fl-btn-gold:hover { background: #F8C446; }
-.fl-landing .fl-btn-ghost { color: #fff; background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .85); }
-.fl-btn-ghost:hover { background: rgba(255, 255, 255, .16); }
-.fl-landing .fl-btn-dark { background: var(--fl-green); color: #fff; }
-.fl-btn-dark:hover { background: var(--fl-green-dark); }
-
 .fl-float {
   position: absolute; z-index: 2; width: 76px; height: 76px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
   background: rgba(4, 33, 15, .55); border: 1.5px solid rgba(111, 211, 160, .65); color: #6FD3A0;
@@ -102,19 +116,39 @@
 .fl-float.f1 { right: 30%; top: 26%; }
 .fl-float.f2 { right: 40%; top: 50%; width: 70px; height: 70px; }
 .fl-float.f3 { right: 7%; top: 28%; color: #fff; background: rgba(37, 168, 106, .35); }
-
 .fl-wave { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: 110px; display: block; }
 
-/* ---------- Titres de section ---------- */
+/* ---------- 5. Titres de section ---------- */
 .fl-eyebrow { display: flex; align-items: center; justify-content: center; gap: 18px; font-size: 14px; font-weight: 600; letter-spacing: .06em !important; text-transform: uppercase; color: var(--fl-gold-dark); }
 .fl-eyebrow::before, .fl-eyebrow::after { content: ''; width: 90px; height: 2px; background: var(--fl-gold); }
 .fl-h2 { margin: 6px 0 0; text-align: center; font-weight: 700; font-size: clamp(1.5rem, 2.6vw, 2rem); line-height: 1.25; color: var(--fl-ink); }
 
-/* ---------- Atouts ---------- */
-.fl-atouts { max-width: 1360px; margin: 0 auto; padding: 8px 32px 56px; }
+/* ---------- 6. À propos ---------- */
+.fl-about { background-image: linear-gradient(180deg, #fff 0%, #F3F7F3 100%); }
+.fl-about-in { max-width: 1360px; margin: 0 auto; padding: 24px 32px 64px; }
+.fl-about-grid { margin-top: 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: stretch; }
+.fl-about-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; }
+.fl-about-copy h2 { margin: 0; font-weight: 700; font-size: clamp(1.9rem, 3.2vw, 2.5rem); line-height: 1.15; color: var(--fl-ink); }
+.fl-about-copy > p { margin: 20px 0 0; max-width: 520px; font-size: 16px; color: var(--fl-muted); }
+.fl-about-copy .fl-btn { margin-top: 28px; }
+.fl-badges { margin: 26px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
+.fl-badges li {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 8px 14px; border-radius: 999px;
+  background: #fff; border: 1px solid #D5E3D9; font-size: 13px; font-weight: 500; color: var(--fl-ink);
+}
+.fl-badges svg { color: var(--fl-green); }
+.fl-about-art { min-width: 0; display: flex; }
+.fl-about-art img {
+  display: block; width: 100%; height: 100%; min-height: 340px; max-height: 480px;
+  object-fit: cover; object-position: center; border-radius: 20px;
+  box-shadow: 0 24px 48px -28px rgba(10, 42, 26, .45);
+}
+
+/* ---------- 7. Bénéfices (cartes) ---------- */
+.fl-atouts { max-width: 1360px; margin: 0 auto; padding: 56px 32px; }
 .fl-cards { margin-top: 34px; display: flex; flex-wrap: wrap; gap: 20px; }
 .fl-card {
-  flex: 1 1 220px; min-width: 0; text-align: center; background: #f3fdfd; border-radius: 10px; padding: 60px 50px 50px 50px; position: relative;
+  flex: 1 1 220px; min-width: 0; text-align: center; background: #f3fdfd; border-radius: 10px; padding: 44px 28px 40px; position: relative;
   border: 1px solid #034b15; box-shadow: 0 12px 30px -16px rgba(10, 42, 26, .28);
 }
 .fl-card::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 38%; height: 3px; transform: translateX(-50%); border-radius: 3px; background: var(--fl-green); }
@@ -122,55 +156,34 @@
 .fl-card h3 { margin: 14px 0 8px; font-size: 17px; font-weight: 600; color: var(--fl-ink); }
 .fl-card p { margin: 0; font-size: 14px; color: var(--fl-muted); line-height: 1.55; }
 
-/* ---------- À propos ---------- */
-.fl-about { background-image: linear-gradient(180deg, #fff 0%, #F3F7F3 100%); }
-.fl-about-in { max-width: 1360px; margin: 0 auto; padding: 40px 32px 56px; }
-.fl-about-grid { margin-top: 26px; display: flex; flex-wrap: wrap; align-items: center; gap: 32px; }
-.fl-about-copy { flex: 1 1 460px; min-width: 0; }
-.fl-about-copy h2 { margin: 0; font-weight: 700; font-size: clamp(1.9rem, 3.2vw, 2.5rem); line-height: 1.15; color: var(--fl-ink); }
-/* .fl-about-copy h2 span { color: var(--fl-green); } */
-.fl-about-copy > p { margin: 20px 0 0; max-width: 480px; font-size: 16px; color: var(--fl-ink); }
-.fl-stats { margin-top: 26px; display: inline-flex; flex-wrap: wrap; align-items: center; background: #fff; border-radius: 16px; padding: 14px 8px; box-shadow: 0 10px 26px -16px rgba(10, 42, 26, .35); border: 1px solid #EDF1EE; }
-.fl-stat { display: flex; align-items: center; gap: 12px; padding: 4px 22px; }
-.fl-stat + .fl-stat { border-left: 1px solid #D9E2DB; }
-.fl-stat strong { display: block; font-size: 19px; font-weight: 700; line-height: 1.2; }
-.fl-stat small { display: block; font-size: 12.5px; color: var(--fl-muted); }
-.fl-about-copy .fl-btn { margin-top: 26px; }
-/* .fl-about-art { flex: 1 1 420px; min-width: 0; display: flex; justify-content: center; position: relative; min-height: 360px; }
-.fl-about-art::before {
-  content: ''; position: absolute; inset: 0; opacity: .5;
-  background-image: radial-gradient(#9DB5A3 1.6px, transparent 1.8px); background-size: 14px 14px;
-  -webkit-mask-image: radial-gradient(ellipse at 70% 40%, #000 0%, transparent 65%); mask-image: radial-gradient(ellipse at 70% 40%, #000 0%, transparent 65%);
-} */
-.fl-about-art { flex: 1 1 420px; min-width: 0; display: flex; justify-content: flex-end; align-items: center; }
-.fl-about-art img { display: block; width: 100%; max-width: 520px; height: auto; border-radius: 20px; box-shadow: 0 24px 48px -28px rgba(10, 42, 26, .45); }
-
-/* ---------- FAQ ---------- */
-.fl-faq { max-width: 1000px; margin: 0 auto; padding: 48px 32px 64px; }
+/* ---------- 8. FAQ ---------- */
+.fl-faq { max-width: 1000px; margin: 0 auto; padding: 32px 32px 48px; }
 .fl-faq-list { margin-top: 26px; display: flex; flex-direction: column; gap: 12px; }
 .fl-faq details { background: #f1f5f4; border-radius: 14px; border: 1px solid #EDF1EE; box-shadow: 0 8px 22px -14px rgba(10, 42, 26, .35); padding: 0; margin: 0; }
 .fl-faq summary { cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 22px; font-size: 15.5px; font-weight: 500; color: var(--fl-ink); }
 .fl-faq summary::-webkit-details-marker { display: none; }
 .fl-faq details[open] .fl-plus { transform: rotate(45deg); }
 .fl-plus { transition: transform .15s; }
-.fl-faq details p { margin: 0; padding: 0 22px 18px; font-size: 14.5px; color: var(--fl-ink); max-width: 820px; }
+.fl-faq details p { margin: 0; padding: 0 22px 18px; font-size: 14.5px; color: var(--fl-muted); max-width: 820px; }
 
-/* ---------- Responsive ---------- */
+/* ---------- 9. Responsive ---------- */
 @media (max-width: 1020px) {
-  .fl-nav { display: none; }
   .fl-float { display: none; }
   .fl-hero-photo { width: 100%; opacity: .35; }
+  .fl-hero-inner { padding: 0 32px; }
+  .fl-about-grid { grid-template-columns: 1fr; gap: 32px; }
+  .fl-about-art img { min-height: 0; max-height: none; aspect-ratio: 4 / 3; }
 }
 @media (max-width: 640px) {
-  .fl-header-wrap { padding: 0 10px; }
-  .fl-header { padding: 12px 16px; }
+  .fl-landing { --fl-header-h: 68px; }
+  .fl-header { padding: 10px 16px; }
   .fl-brand-name { font-size: 22px; }
+  .fl-header-actions { gap: 8px; }
   .fl-cta { padding: 0 16px; min-height: 42px; font-size: 13px; }
+  .fl-lost { padding: 0 8px; font-size: 12.5px; }
   .fl-hero { padding: 120px 0 120px; }
   .fl-hero-inner, .fl-atouts, .fl-about-in, .fl-faq { padding-left: 18px; padding-right: 18px; }
   .fl-eyebrow::before, .fl-eyebrow::after { width: 28px; }
-  .fl-stat { padding: 8px 14px; }
-  .fl-stat + .fl-stat { border-left: 0; }
 }
 
 /* Grands écrans : réduit l'échelle pour éviter l'effet « trop zoomé » */
