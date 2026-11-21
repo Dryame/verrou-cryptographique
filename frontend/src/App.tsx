@@ -30,6 +30,7 @@ import {
   saveVaultEntry,
   type VaultEntry
 } from './crypto/vaultStore';
+import LandingPage from './landing/LandingPage';
 
 interface Contact {
   id: string;
@@ -225,7 +226,7 @@ function extraireFichier(bytes: Uint8Array): FichierDechiffre | null {
   };
 }
 
-function HomePage({
+export function HomePage({
   onOpenLogin,
   onOpenRecovery
 }: {
@@ -742,7 +743,7 @@ export default function App() {
 
   /* ---- ÉCRAN DE CONNEXION ---- */
   if (showHome) {
-    return <HomePage onOpenLogin={openSecureSpace} onOpenRecovery={openRecoverySpace} />;
+    return <LandingPage onOpenLogin={openSecureSpace} onOpenRecovery={openRecoverySpace} />;
   }
 
   if (!isUnlocked) return (
